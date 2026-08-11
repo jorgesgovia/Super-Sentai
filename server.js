@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import { manifest } from "./src/manifest.js";
 import { getCatalog } from "./src/catalog.js";
