@@ -1,6 +1,5 @@
-import fs from "fs";
-
-const HTML_FILE = "/tmp/flashman-drive.html";
+```js
+const FOLDER_ID = "1PXkjbU32tpllgv6K-z-tbZuUyjDZ6zS6";
 
 function decodeHtmlEntities(text) {
   return text
@@ -11,14 +10,23 @@ function decodeHtmlEntities(text) {
     .replace(/&gt;/g, ">");
 }
 
-export function extractDriveEpisodes() {
-  const raw = fs.readFileSync(HTML_FILE, "utf8");
+export async function extractDriveEpisodes() {
+  const url =
+    `https://drive.google.com/drive/folders/${FOLDER_ID}?hl=es`;
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Google Drive respondió ${response.status}`);
+  }
+
+  const raw = await response.text();
   const data = decodeHtmlEntities(raw);
 
   const results = new Map();
 
   const regex =
-    /data-id="([^"]+)"[\s\S]{0,3000}?aria-label="([^"]+\.mp4)[^"]*"/gi;
+    /data-id="([^"]+)"[\s\S]{0,5000}?aria-label="([^"]+?\.mp4)"/gi;
 
   let match;
 
@@ -46,3 +54,4 @@ export function extractDriveEpisodes() {
   return [...results.values()]
     .sort((a, b) => a.episode - b.episode);
 }
+```
