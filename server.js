@@ -95,7 +95,7 @@ app.get("/stream/:type/:id.json", async (req, res) => {
       return res.json({ streams: [] });
     }
 
-    const streams = getStreams(id);
+    const streams = await getStreams(id);
 
     res.json({ streams });
   } catch (error) {
