@@ -67,7 +67,39 @@ const FLASHMAN_DESCRIPTIONS = [
   "¡El tiempo de los Flashman se acaba! ¿Podrán destruir lo que queda de Mess antes de que el Fenómeno Anti-Flash los consuma?"
 ];
 
+
+async function fetchJson(url) {
+  try {
+    const r = await fetch(url);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch {
+    return null;
+  }
+}
+
+function first(...values) {
+  return values.find(
+    (v) => v !== undefined && v !== null && v !== ""
+  );
+}
+
 export async function getMetadata() {
+
+  // Fuentes complementarias de metadata
+  const imdbData = await fetchJson(
+    `https://v3.sg.media-imdb.com/suggestion/x/${IMDB_ID}.json`
+  );
+
+  const cinemetaData = await fetchJson(
+    `https://v3-cinemeta.strem.io/meta/tv/${IMDB_ID}.json`
+  );
+
+  const traktData = await fetchJson(
+    `https://api.trakt.tv/shows/${TRAKT_ID}?extended=full`
+  );
+
+
   const [tmdb, mdblist, season] = await Promise.all([
     getTmdbSeries(TMDB_ID),
     getMdbListData(IMDB_ID).catch(() => null),
@@ -164,7 +196,45 @@ export async function getMetadata() {
     };
   });
 
-  const meta = {
+  
+const mergedCast = [
+  ...(cast || []),
+
+  ...(cinemetaData?.meta?.cast || []).map((p) => ({
+    name: p.name,
+    character: p.character || "",
+    profile: p.profilePath || p.profile || null
+  })),
+
+  ...(traktData?.people?.cast || []).map((p) => ({
+    name: p.person?.name,
+    character:
+      Array.isArray(p.character)
+        ? p.character.map((c) => c.name).join(", ")
+        : "",
+    profile: null
+  }))
+].filter(
+  (person, index, self) =>
+    person.name &&
+    self.findIndex((x) => x.name === person.name) === index
+);
+
+const mergedDirectors = [
+  ...(directors || []),
+  ...(cinemetaData?.meta?.director || []),
+  ...(traktData?.people?.crew?.directing || [])
+    .map((p) => p.person?.name)
+].filter(Boolean);
+
+const mergedWriters = [
+  ...(writers || []),
+  ...(cinemetaData?.meta?.writer || []),
+  ...(traktData?.people?.crew?.writing || [])
+    .map((p) => p.person?.name)
+].filter(Boolean);
+
+const meta = {
     id: "super-sentai-flashman",
 
     type: "series",
@@ -348,7 +418,103 @@ export async function getMetadata() {
       }
     ],
 
-    videos: episodes,
+    
+genre:
+  first(
+    tmdb?.genres?.map((g) => g.name),
+    cinemetaData?.meta?.genres,
+    mdblist?.genres
+  ) || [],
+
+genres:
+  first(
+    tmdb?.genres?.map((g) => g.name),
+    cinemetaData?.meta?.genres,
+    mdblist?.genres
+  ) || [],
+
+country:
+  tmdb?.origin_country ||
+  cinemetaData?.meta?.country ||
+  ["JP"],
+
+language:
+  first(
+    tmdb?.original_language,
+    cinemetaData?.meta?.language,
+    "ja"
+  ),
+
+spokenLanguage:
+  first(
+    tmdb?.spoken_languages?.[0]?.iso_639_1,
+    cinemetaData?.meta?.language,
+    "ja"
+  ),
+
+runtime:
+  first(
+    tmdb?.episode_run_time?.[0],
+    cinemetaData?.meta?.runtime,
+    mdblist?.runtime,
+    20
+  ),
+
+rating:
+  first(
+    tmdbRating,
+    imdbRating,
+    cinemetaData?.meta?.imdbRating
+  ),
+
+imdbRating:
+  first(
+    imdbRating,
+    cinemetaData?.meta?.imdbRating,
+    tmdbRating
+  ),
+
+imdbVotes:
+  first(
+    cinemetaData?.meta?.imdbVotes,
+    imdbData?.d?.[0]?.v
+  ),
+
+network:
+  first(
+    tmdb?.networks?.[0]?.name,
+    cinemetaData?.meta?.network,
+    mdblist?.network
+  ),
+
+productionCompanies:
+  tmdb?.production_companies?.map((x) => x.name) ||
+  cinemetaData?.meta?.productionCompanies ||
+  mdblist?.production_companies ||
+  [],
+
+production_companies:
+  tmdb?.production_companies?.map((x) => x.name) ||
+  cinemetaData?.meta?.productionCompanies ||
+  mdblist?.production_companies ||
+  [],
+
+logo:
+  cinemetaData?.meta?.logo ||
+  (
+    tmdb?.logo_path
+      ? `https://image.tmdb.org/t/p/original${tmdb.logo_path}`
+      : undefined
+  ),
+
+tagline:
+  first(
+    tmdb?.tagline,
+    cinemetaData?.meta?.tagline,
+    mdblist?.tagline
+  ),
+
+videos: episodes,
 
     trailers: [],
 
