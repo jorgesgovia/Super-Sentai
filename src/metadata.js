@@ -1,6 +1,7 @@
 import { getTmdbSeries, getTmdbSeason } from "./tmdb.js";
 import { getMdbListData } from "./mdblist.js";
 
+import { mergeExternalMetadata } from "./externalMetadata.js";
 const TMDB_ID = "70787";
 const IMDB_ID = "tt0090407";
 const TRAKT_ID = 1307;
@@ -358,7 +359,7 @@ export async function getMetadata() {
     }
   };
 
-  return meta;
+  return await mergeExternalMetadata(meta, IMDB_ID);
 }
 
 export async function buildMetadata() {
