@@ -91,3 +91,8 @@ export async function getMetadata() {
     }
   };
 }
+
+
+export async function buildMetadata() {
+  return await getMetadata();
+}
