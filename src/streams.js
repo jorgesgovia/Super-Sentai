@@ -1,8 +1,7 @@
-import { extractDriveEpisodes } from "./drive.js";
-
-function driveUrl(fileId) {
-  return "https://drive.google.com/uc?export=download&id=" + fileId;
-}
+import {
+  extractDriveEpisodes,
+  getDriveStream
+} from "./drive.js";
 
 export async function getStreams(episodeId) {
   const match = episodeId.match(/:(\d+):(\d+)$/);
@@ -20,17 +19,21 @@ export async function getStreams(episodeId) {
 
   const episodes = await extractDriveEpisodes();
 
-  const video = episodes.find((x) => x.episode === episode);
+  const video = episodes.find(
+    (x) => x.episode === episode
+  );
 
   if (!video) {
     return [];
   }
 
+  const streamUrl = await getDriveStream(video.fileId);
+
   return [
     {
       name: "Google Drive",
-      title: "Episodio " + episode + " • Google Drive",
-      url: driveUrl(video.fileId),
+      title: `Episodio ${episode} • Google Drive`,
+      url: streamUrl,
       type: "video/mp4"
     }
   ];

@@ -5,8 +5,8 @@ const FOLDER_URL =
 
 function decodeHtmlEntities(text) {
   return text
-    .replace(/\\'/g, "'")
-    .replace(/\\"/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">");
@@ -24,19 +24,20 @@ export async function extractDriveEpisodes() {
 
   const results = new Map();
 
-  // En el HTML de Drive:
-  // aria-label="... E01 ...mp4..."
-  // ...
-  // data-id="FILE_ID"
   const regex =
-    /aria-label="([^"]+\bE(\d{1,2})\b[^"]+\.mp4)[^"]*"[\s\S]{0,3000}?data-id="([^"]+)"/gi;
+    /data-id="([^"]+)"[\s\S]{0,3000}?aria-label="([^"]+\.mp4)[^"]*"/gi;
 
   let match;
 
   while ((match = regex.exec(data)) !== null) {
-    const filename = match[1];
-    const episode = Number(match[2]);
-    const fileId = match[3];
+    const fileId = match[1];
+    const filename = match[2];
+
+    const episodeMatch = filename.match(/\bE(\d{1,2})\b/i);
+
+    if (!episodeMatch) continue;
+
+    const episode = Number(episodeMatch[1]);
 
     if (episode < 1 || episode > 50) continue;
 
@@ -51,4 +52,36 @@ export async function extractDriveEpisodes() {
 
   return [...results.values()]
     .sort((a, b) => a.episode - b.episode);
+}
+
+export async function getDriveStream(fileId) {
+  const url =
+    `https://drive.usercontent.google.com/download` +
+    `?id=${encodeURIComponent(fileId)}` +
+    `&export=download`;
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Google Drive respondió ${response.status}`);
+  }
+
+  const html = await response.text();
+
+  const uuidMatch =
+    html.match(/name="uuid"\s+value="([^"]+)"/i);
+
+  if (!uuidMatch) {
+    throw new Error("Google Drive no proporcionó UUID");
+  }
+
+  const uuid = uuidMatch[1];
+
+  return (
+    `https://drive.usercontent.google.com/download` +
+    `?id=${encodeURIComponent(fileId)}` +
+    `&export=download` +
+    `&confirm=t` +
+    `&uuid=${encodeURIComponent(uuid)}`
+  );
 }
