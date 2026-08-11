@@ -7,6 +7,13 @@ import { getStreams } from "./src/streams.js";
 
 const app = express();
 
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  next();
+});
+
 const PORT = Number(process.env.PORT || 7070);
 
 app.get("/manifest.json", (req, res) => {
