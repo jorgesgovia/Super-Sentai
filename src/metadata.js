@@ -1,129 +1,93 @@
-import { getTmdbSeries } from "./tmdb.js";
+import { getTmdbSeries, getTmdbSeason } from "./tmdb.js";
 import { getMdbListData } from "./mdblist.js";
 
-function imageUrl(path) {
-  if (!path) return "";
-  return `https://image.tmdb.org/t/p/original${path}`;
-}
+const TMDB_ID = "70787";
+const IMDB_ID = "tt0090407";
+const IMAGE = "https://image.tmdb.org/t/p/original";
 
-function formatReleaseInfo(tmdb) {
-  if (!tmdb.first_air_date) return "";
+export async function getMetadata() {
+  const [tmdb, mdblist] = await Promise.all([
+    getTmdbSeries(TMDB_ID),
+    getMdbListData(IMDB_ID).catch(() => null)
+  ]);
 
-  const year = tmdb.first_air_date.slice(0, 4);
+  const season = await getTmdbSeason(TMDB_ID, 1);
 
-  if (!tmdb.last_air_date) {
-    return year;
-  }
-
-  const lastYear = tmdb.last_air_date.slice(0, 4);
-
-  return year === lastYear ? year : `${year}-${lastYear}`;
-}
-
-export async function buildMetadata(series) {
-  const tmdb = await getTmdbSeries(series.tmdbId);
-
-  const imdbId = tmdb.external_ids?.imdb_id || null;
-  const tvdbId = tmdb.external_ids?.tvdb_id || null;
-
-  let mdblist = null;
-
-  if (imdbId) {
-    try {
-      mdblist = await getMdbListData(imdbId);
-    } catch (error) {
-      console.warn("MDBList no disponible:", error.message);
+  const episodes = season.episodes.map((ep) => ({
+    id: "super-sentai-flashman:1:" + ep.episode_number,
+    title: ep.name || "Episodio " + ep.episode_number,
+    season: 1,
+    number: ep.episode_number,
+    overview: ep.overview || "",
+    released: ep.air_date || undefined,
+    runtime: ep.runtime || tmdb.episode_run_time?.[0] || 20,
+    thumbnail: ep.still_path
+      ? IMAGE + ep.still_path
+      : undefined,
+    rating: ep.vote_average || undefined,
+    behaviorHints: {
+      defaultVideoId:
+        "super-sentai-flashman:1:" + ep.episode_number
     }
-  }
+  }));
 
-  const ratingSources = [];
-
-  if (mdblist?.ratings) {
-    for (const rating of mdblist.ratings) {
-      if (rating?.source && rating?.score != null) {
-        ratingSources.push({
-          source: rating.source,
-          score: rating.score,
-          votes: rating.votes ?? null
-        });
-      }
-    }
-  }
-
-  const genres = Array.isArray(tmdb.genres)
-    ? tmdb.genres.map((genre) => genre.name)
-    : [];
-
-  const cast = Array.isArray(tmdb.credits?.cast)
-    ? tmdb.credits.cast
-        .slice(0, 20)
-        .map((person) => person.name)
-    : [];
+  const cast = (tmdb.credits?.cast || []).slice(0, 10);
 
   return {
-    id: series.id,
+    id: "super-sentai-flashman",
     type: "series",
-    name: series.name || tmdb.name,
-    originalName: tmdb.original_name || "",
-    poster: imageUrl(tmdb.poster_path),
-    background: imageUrl(tmdb.backdrop_path),
-    description: tmdb.overview || mdblist?.description || "",
-    year: tmdb.first_air_date
-      ? Number(tmdb.first_air_date.slice(0, 4))
-      : null,
-    releaseInfo: formatReleaseInfo(tmdb),
-    released: tmdb.first_air_date
-      ? `${tmdb.first_air_date}T00:00:00.000Z`
-      : null,
-    status: tmdb.status || "",
-    runtime: tmdb.episode_run_time?.[0] || null,
-    country: tmdb.origin_country || [],
-    language: tmdb.original_language || "",
-    genres,
-    cast,
-    director: [],
-    writer: [],
-    imdb_id: imdbId,
-    tvdb_id: tvdbId,
-    moviedb_id: tmdb.id,
+    name: tmdb.name || "Choushinsei Flashman",
+
+    poster: tmdb.poster_path
+      ? IMAGE + tmdb.poster_path
+      : undefined,
+
+    background: tmdb.backdrop_path
+      ? IMAGE + tmdb.backdrop_path
+      : undefined,
+
+    description:
+      tmdb.overview ||
+      mdblist?.description ||
+      "",
+
+    year: Number(tmdb.first_air_date?.slice(0, 4)) || 1986,
+    released: tmdb.first_air_date,
+    runtime: tmdb.episode_run_time?.[0] || 20,
+    status: tmdb.status,
+
+    genres: tmdb.genres?.map((g) => g.name) || [],
 
     imdbRating:
-      mdblist?.ratings?.find((r) => r.source === "imdb")?.score ?? null,
+      mdblist?.ratings?.find((r) => r.source === "imdb")?.value ||
+      undefined,
 
-    traktRating:
-      mdblist?.ratings?.find((r) => r.source === "trakt")?.score ?? null,
+    rating: tmdb.vote_average,
+    votes: tmdb.vote_count,
 
-    tmdbRating:
-      mdblist?.ratings?.find((r) => r.source === "tmdb")?.score ??
-      tmdb.vote_average ??
-      null,
+    country: tmdb.origin_country?.[0] || "JP",
+    language: tmdb.original_language || "ja",
 
-    popularities: {
-      mdblistScore: mdblist?.score ?? null,
-      mdblistAverage: mdblist?.score_average ?? null
-    },
-
-    ratingSources,
+    cast: cast.map((x) => x.name),
+    characters: cast.map((x) => x.character),
 
     links: [
-      ...(imdbId
-        ? [
-            {
-              name: "IMDb",
-              category: "imdb",
-              url: `https://www.imdb.com/title/${imdbId}/`
-            }
-          ]
-        : []),
-
+      {
+        name: "IMDb",
+        category: "imdb",
+        url: "https://www.imdb.com/title/" + IMDB_ID + "/"
+      },
       {
         name: "TMDB",
         category: "tmdb",
-        url: `https://www.themoviedb.org/tv/${tmdb.id}`
+        url: "https://www.themoviedb.org/tv/" + TMDB_ID
       }
     ],
 
-    _tmdb: tmdb,
-    _mdblist: mdblist
+    videos: episodes,
+
+    behaviorHints: {
+      defaultVideoId: "super-sentai-flashman:1:1"
+    }
   };
 }
