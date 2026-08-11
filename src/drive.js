@@ -1,20 +1,19 @@
-```js
 const FOLDER_ID = "1PXkjbU32tpllgv6K-z-tbZuUyjDZ6zS6";
+
+const FOLDER_URL =
+  `https://drive.google.com/drive/folders/${FOLDER_ID}?hl=es`;
 
 function decodeHtmlEntities(text) {
   return text
-    .replace(/&#39;/g, "'")
-    .replace(/&quot;/g, '"')
+    .replace(/\\'/g, "'")
+    .replace(/\\"/g, '"')
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">");
 }
 
 export async function extractDriveEpisodes() {
-  const url =
-    `https://drive.google.com/drive/folders/${FOLDER_ID}?hl=es`;
-
-  const response = await fetch(url);
+  const response = await fetch(FOLDER_URL);
 
   if (!response.ok) {
     throw new Error(`Google Drive respondió ${response.status}`);
@@ -25,20 +24,19 @@ export async function extractDriveEpisodes() {
 
   const results = new Map();
 
+  // En el HTML de Drive:
+  // aria-label="... E01 ...mp4..."
+  // ...
+  // data-id="FILE_ID"
   const regex =
-    /data-id="([^"]+)"[\s\S]{0,5000}?aria-label="([^"]+?\.mp4)"/gi;
+    /aria-label="([^"]+\bE(\d{1,2})\b[^"]+\.mp4)[^"]*"[\s\S]{0,3000}?data-id="([^"]+)"/gi;
 
   let match;
 
   while ((match = regex.exec(data)) !== null) {
-    const fileId = match[1];
-    const filename = match[2];
-
-    const episodeMatch = filename.match(/\bE(\d{1,2})\b/i);
-
-    if (!episodeMatch) continue;
-
-    const episode = Number(episodeMatch[1]);
+    const filename = match[1];
+    const episode = Number(match[2]);
+    const fileId = match[3];
 
     if (episode < 1 || episode > 50) continue;
 
@@ -54,4 +52,3 @@ export async function extractDriveEpisodes() {
   return [...results.values()]
     .sort((a, b) => a.episode - b.episode);
 }
-```
