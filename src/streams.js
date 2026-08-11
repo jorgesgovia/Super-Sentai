@@ -4,7 +4,7 @@ function driveUrl(fileId) {
   return "https://drive.google.com/uc?export=download&id=" + fileId;
 }
 
-export function getStreams(episodeId) {
+export async function getStreams(episodeId) {
   const match = episodeId.match(/:(\d+):(\d+)$/);
 
   if (!match) {
@@ -18,7 +18,8 @@ export function getStreams(episodeId) {
     return [];
   }
 
-  const episodes = extractDriveEpisodes();
+  const episodes = await extractDriveEpisodes();
+
   const video = episodes.find((x) => x.episode === episode);
 
   if (!video) {
