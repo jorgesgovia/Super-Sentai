@@ -26,15 +26,22 @@ app.get("/catalog/:type/:id.json", async (req, res) => {
     const { type, id } = req.params;
 
     if (type !== "series" || id !== "super-sentai") {
-      return res.json({ metas: [] });
+      return res.json({
+        metas: []
+      });
     }
 
     const metas = await getCatalog();
 
-    res.json({ metas });
+    res.json({
+      metas
+    });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: error.message });
+
+    res.status(500).json({
+      error: error.message
+    });
   }
 });
 
@@ -57,8 +64,12 @@ app.get("/meta/:type/:id.json", async (req, res) => {
     }
 
     const episodes = await getEpisodes(id);
+
     const catalog = await getCatalog();
-    const metadata = catalog.find((item) => item.id === id);
+
+    const metadata = catalog.find(
+      (item) => item.id === id
+    );
 
     if (!metadata) {
       return res.status(404).json({
@@ -69,21 +80,20 @@ app.get("/meta/:type/:id.json", async (req, res) => {
     res.json({
       meta: {
         ...metadata,
+
         videos: episodes.map((episode) => ({
-          id: episode.id,
-          title: episode.name,
-          season: episode.season,
-          episode: episode.episode,
-          released: episode.released,
-          thumbnail: episode.thumbnail,
-          overview: episode.overview,
-          runtime: episode.runtime
+          ...episode,
+          title: episode.name
         }))
       }
     });
+
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: error.message });
+
+    res.status(500).json({
+      error: error.message
+    });
   }
 });
 
@@ -92,12 +102,17 @@ app.get("/stream/:type/:id.json", async (req, res) => {
     const { type, id } = req.params;
 
     if (type !== "series") {
-      return res.json({ streams: [] });
+      return res.json({
+        streams: []
+      });
     }
 
     const streams = await getStreams(id);
 
-    res.json({ streams });
+    res.json({
+      streams
+    });
+
   } catch (error) {
     console.error(error);
 
@@ -109,5 +124,7 @@ app.get("/stream/:type/:id.json", async (req, res) => {
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Super Sentai Addon ejecutándose en http://0.0.0.0:${PORT}`);
+  console.log(
+    `Super Sentai Addon ejecutándose en http://0.0.0.0:${PORT}`
+  );
 });
