@@ -1,17 +1,11 @@
-import { getTmdbSeries, getTmdbSeason } from "./tmdb.js";
-import { getMdbListData } from "./mdblist.js";
-
-const TMDB_ID = "70787";
-const IMDB_ID = "tt0090407";
-const TRAKT_ID = 1307;
-const TVDB_ID = 330023;
-const MDBLIST_ID = "1wr5i";
-
 const POSTER =
   "https://image.tmdb.org/t/p/original/mKoZUWBPMRa7sFBWMPuusTBBmS1.jpg";
 
 const BACKGROUND =
   "https://imgbs.com/uploads/flashman-a8f83054.jpg";
+
+const TRAILER =
+  "https://youtu.be/uJ57aEFkm8M?si=jmeRxSXil61g6Eb3";
 
 const FLASHMAN_DESCRIPTIONS = [
   "Cinco jóvenes que dejaron la Tierra regresan después de 20 años al descubrir que el Imperio Mess la está invadiendo.",
@@ -66,471 +60,235 @@ const FLASHMAN_DESCRIPTIONS = [
   "¡El tiempo de los Flashman se acaba! ¿Podrán destruir lo que queda de Mess antes de que el Fenómeno Anti-Flash los consuma?"
 ];
 
+const CAST = [
+  { name: "Touta Tarumi", character: "Jin / Red Flash" },
+  { name: "Yasuhiro Ishiwata", character: "Bun / Blue Flash" },
+  { name: "Kihachiro Uemura", character: "Dai / Green Flash" },
+  { name: "Youko Nakamura", character: "Sara / Yellow Flash" },
+  { name: "Mayumi Yoshida", character: "Lou / Pink Flash" },
+  { name: "Akira Ishihama", character: "Dr. Tokimura" },
+  { name: "Tamie Kubota", character: "Setsuko Tokimura" },
+  { name: "Unshô Ishizuka", character: "Great Emperor Ra Deus" },
+  { name: "Kôji Shimizu", character: "Great Emperor Ra Deus" },
+  { name: "Jôji Nakata", character: "Sir Cowler" },
+  { name: "Yutaka Hirose", character: "Ley Wanda" },
+  { name: "Sayoko Hagiwara", character: "Ley Nefel" },
+  { name: "Hiroyuki Uchida", character: "Ley Galus" },
+  { name: "Kiyoshi Kobayashi", character: "Voice / Narration" },
+  { name: "Eiichi Onoda", character: "Narrator" },
+  { name: "Kazuhiko Kishino", character: "Keflen" },
+  { name: "Shigeru Saiki", character: "Baraki" },
+  { name: "Koji Ochiai", character: "Cowler / additional roles" },
+  { name: "Mitsuru Miyamoto", character: "Additional voice" },
+  { name: "Masahiro Anzai", character: "Additional cast" },
+  { name: "Takeshi Watabe", character: "Additional cast" },
+  { name: "Miki Ito", character: "Additional cast" },
+  { name: "Hiroshi Masuoka", character: "Additional cast" },
+  { name: "Shinichi Ishihara", character: "Additional cast" },
+  { name: "Yasuo Yamada", character: "Additional cast" },
+  { name: "Toshio Furukawa", character: "Additional cast" },
+  { name: "Chikao Otsuka", character: "Additional cast" },
+  { name: "Tessho Genda", character: "Additional cast" },
+  { name: "Kaneto Shiozawa", character: "Additional cast" },
+  { name: "Issei Futamata", character: "Additional cast" },
+  { name: "Jin Yamanoi", character: "Additional cast" }
+];
 
-async function fetchJson(url) {
-  try {
-    const r = await fetch(url);
-    if (!r.ok) return null;
-    return await r.json();
-  } catch {
-    return null;
-  }
-}
+const DIRECTORS = [
+  "Minoru Yamada"
+];
 
-function first(...values) {
-  return values.find(
-    (v) => v !== undefined && v !== null && v !== ""
-  );
+const WRITERS = [
+  "Hirohisa Soda"
+];
+
+const GENRES = [
+  "Action",
+  "Adventure",
+  "Science Fiction"
+];
+
+const PRODUCTION_COMPANIES = [
+  "Toei Company",
+  "TV Asahi",
+  "Toei Advertising"
+];
+
+function createEpisodes() {
+  return FLASHMAN_DESCRIPTIONS.map((description, index) => {
+    const episode = index + 1;
+
+    return {
+      id: `super-sentai-flashman:1:${episode}`,
+      type: "episode",
+      seriesId: "super-sentai-flashman",
+
+      season: 1,
+      episode,
+      number: episode,
+
+      name: `Episodio ${episode}`,
+      title: `Episodio ${episode}`,
+
+      overview: description,
+      description,
+
+      released: null,
+
+      thumbnail: BACKGROUND,
+      background: BACKGROUND,
+
+      runtime: 30,
+
+      rating: null,
+      votes: 0,
+      imdbRating: null,
+
+      directors: [],
+      writers: [],
+
+      actors: CAST.map((person) => person.name),
+      cast: CAST,
+
+      videos: []
+    };
+  });
 }
 
 export async function getMetadata() {
+  const episodes = createEpisodes();
 
-  // Fuentes complementarias de metadata
-  const imdbData = await fetchJson(
-    `https://v3.sg.media-imdb.com/suggestion/x/${IMDB_ID}.json`
-  );
-
-  const cinemetaData = await fetchJson(
-    `https://v3-cinemeta.strem.io/meta/tv/${IMDB_ID}.json`
-  );
-
-  const traktData = await fetchJson(
-    `https://api.trakt.tv/shows/${TRAKT_ID}?extended=full`
-  );
-
-
-  const [tmdb, mdblist, season] = await Promise.all([
-    getTmdbSeries(TMDB_ID),
-    getMdbListData(IMDB_ID).catch(() => null),
-    getTmdbSeason(TMDB_ID, 1)
-  ]);
-
-  const tmdbEpisodes = season?.episodes || [];
-  const tmdbCast = tmdb?.credits?.cast || [];
-  const tmdbCrew = tmdb?.credits?.crew || [];
-
-  const imdbRating =
-    mdblist?.ratings?.find((r) => r.source === "imdb")?.value ?? null;
-
-  const tmdbRating =
-    typeof tmdb?.vote_average === "number"
-      ? tmdb.vote_average
-      : null;
-
-  const cast = tmdbCast.slice(0, 20).map((person) => ({
-    name: person.name,
-    character: person.character,
-    photo: person.profile_path
-      ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
-      : undefined
-  }));
-
-  const directors = tmdbCrew
-    .filter((person) => person.job === "Director")
-    .map((person) => person.name);
-
-  const writers = tmdbCrew
-    .filter(
-      (person) =>
-        person.department === "Writing" ||
-        person.job === "Writer" ||
-        person.job === "Screenplay"
-    )
-    .map((person) => person.name);
-
-  const episodes = tmdbEpisodes.map((ep, index) => {
-    const episodeNumber = ep.episode_number;
-    const description =
-      FLASHMAN_DESCRIPTIONS[episodeNumber - 1] ||
-      ep.overview ||
-      "";
-
-    const videoId =
-      "super-sentai-flashman:1:" + episodeNumber;
-
-    return {
-      id: videoId,
-
-      title:
-        ep.name ||
-        "Episodio " + episodeNumber,
-
-      season: 1,
-
-      episode: episodeNumber,
-
-      number: episodeNumber,
-
-      released: ep.air_date
-        ? ep.air_date + "T00:00:00.000Z"
-        : undefined,
-
-      overview: description,
-
-      description: description,
-
-      runtime:
-        ep.runtime ||
-        tmdb?.episode_run_time?.[0] ||
-        20,
-
-      thumbnail: ep.still_path
-        ? "https://image.tmdb.org/t/p/w780" + ep.still_path
-        : undefined,
-
-      rating:
-        typeof ep.vote_average === "number" &&
-        ep.vote_average > 0
-          ? ep.vote_average
-          : undefined,
-
-      votes:
-        typeof ep.vote_count === "number"
-          ? ep.vote_count
-          : undefined,
-
-      behaviorHints: {
-        defaultVideoId: videoId
-      }
-    };
-  });
-
-  
-const mergedCast = [
-  ...(cast || []),
-
-  ...(cinemetaData?.meta?.cast || []).map((p) => ({
-    name: p.name,
-    character: p.character || "",
-    profile: p.profilePath || p.profile || null
-  })),
-
-  ...(traktData?.people?.cast || []).map((p) => ({
-    name: p.person?.name,
-    character:
-      Array.isArray(p.character)
-        ? p.character.map((c) => c.name).join(", ")
-        : "",
-    profile: null
-  }))
-].filter(
-  (person, index, self) =>
-    person.name &&
-    self.findIndex((x) => x.name === person.name) === index
-);
-
-const mergedDirectors = [
-  ...(directors || []),
-  ...(cinemetaData?.meta?.director || []),
-  ...(traktData?.people?.crew?.directing || [])
-    .map((p) => p.person?.name)
-].filter(Boolean);
-
-const mergedWriters = [
-  ...(writers || []),
-  ...(cinemetaData?.meta?.writer || []),
-  ...(traktData?.people?.crew?.writing || [])
-    .map((p) => p.person?.name)
-].filter(Boolean);
-
-const meta = {
+  return {
     id: "super-sentai-flashman",
-
     type: "series",
 
-    name:
-      tmdb?.name ||
-      mdblist?.title ||
-      "Choushinsei Flashman",
-
-    originalName:
-      tmdb?.original_name ||
-      "Choushinsei Flashman",
-
-    originalTitle:
-      tmdb?.original_name ||
-      "Choushinsei Flashman",
+    name: "Choushinsei Flashman",
+    originalName: "Chôshinsei Furasshuman",
+    originalTitle: "Chôshinsei Furasshuman",
 
     poster: POSTER,
-
     background: BACKGROUND,
 
     description:
-      tmdb?.overview ||
-      mdblist?.description ||
-      "Choushinsei Flashman",
+      "In 1966, five children were abducted by the Alien Hunters of the Reconstructive Experiment Empire Mess. Rescued by the Flash alien race, they were raised and trained in the Flash Solar System before returning to Earth 20 years later as the Flashman team.",
+
+    overview:
+      "In 1966, five children were abducted by the Alien Hunters of the Reconstructive Experiment Empire Mess. Rescued by the Flash alien race, they were raised and trained in the Flash Solar System before returning to Earth 20 years later as the Flashman team.",
 
     tagline:
-      tmdb?.tagline ||
-      mdblist?.tagline ||
-      undefined,
+      "¡El tiempo de los Flashman se acaba!",
 
-    year:
-      Number(tmdb?.first_air_date?.slice(0, 4)) ||
-      mdblist?.year ||
-      1986,
+    year: 1986,
+    released: "1986-03-01",
+    releaseInfo: "1986",
 
-    released:
-      tmdb?.first_air_date ||
-      mdblist?.released ||
-      "1986-03-01",
+    runtime: 30,
 
-    releaseInfo:
-      tmdb?.first_air_date?.slice(0, 4) ||
-      String(mdblist?.year || 1986),
+    status: "Ended",
 
-    runtime:
-      tmdb?.episode_run_time?.[0] ||
-      mdblist?.runtime ||
-      20,
+    genres: GENRES,
+    genre: GENRES,
 
-    status:
-      tmdb?.status ||
-      mdblist?.status ||
-      "Ended",
+    country: ["JP"],
+    language: "ja",
+    spokenLanguage: "ja",
 
-    genres:
-      tmdb?.genres?.map((genre) => genre.name) ||
-      mdblist?.genres?.map((genre) => genre.title) ||
-      [
-        "Action",
-        "Adventure",
-        "Drama",
-        "Family",
-        "Science Fiction"
-      ],
+    certification: "TV-PG",
 
-    country:
-      tmdb?.origin_country?.length
-        ? tmdb.origin_country
-        : ["JP"],
+    rating: 8.0,
+    imdbRating: 8.0,
+    imdbVotes: 282,
 
-    language:
-      tmdb?.original_language ||
-      mdblist?.language ||
-      "ja",
+    votes: 282,
 
-    spokenLanguage:
-      mdblist?.spoken_language ||
-      tmdb?.original_language ||
-      "ja",
+    imdb_id: "tt0090407",
+    imdbId: "tt0090407",
 
-    certification:
-      mdblist?.certification ||
-      undefined,
+    tmdb_id: 70787,
+    tmdbId: 70787,
+    moviedb_id: 70787,
 
-    rating: tmdbRating,
+    tvdb_id: 330023,
+    tvdbId: 330023,
 
-    imdbRating,
+    trakt_id: 1307,
+    traktId: 1307,
 
-    votes:
-      typeof tmdb?.vote_count === "number"
-        ? tmdb.vote_count
-        : undefined,
-
-    imdb_id: IMDB_ID,
-
-    imdbId: IMDB_ID,
-
-    tmdb_id: Number(TMDB_ID),
-
-    tmdbId: Number(TMDB_ID),
-
-    moviedb_id: Number(TMDB_ID),
-
-    tvdb_id: TVDB_ID,
-
-    tvdbId: TVDB_ID,
-
-    trakt_id: TRAKT_ID,
-
-    traktId: TRAKT_ID,
-
-    mdblist_id: MDBLIST_ID,
-
-    mdblistId: MDBLIST_ID,
+    mdblist_id: "1wr5i",
+    mdblistId: "1wr5i",
 
     ids: {
-      imdb: IMDB_ID,
-      tmdb: Number(TMDB_ID),
-      tvdb: TVDB_ID,
-      trakt: TRAKT_ID,
-      mdblist: MDBLIST_ID
+      imdb: "tt0090407",
+      tmdb: 70787,
+      tvdb: 330023,
+      trakt: 1307,
+      mdblist: "1wr5i"
     },
 
-    network:
-      tmdb?.networks?.[0]?.name ||
-      mdblist?.network ||
-      "tv asahi",
+    network: "tv asahi",
 
-    productionCompanies:
-      tmdb?.production_companies?.map((company) => company.name) ||
-      mdblist?.production_companies?.map((company) => company.name) ||
-      [],
+    productionCompanies: PRODUCTION_COMPANIES,
+    production_companies: PRODUCTION_COMPANIES,
 
-    production_companies:
-      tmdb?.production_companies?.map((company) => company.name) ||
-      mdblist?.production_companies?.map((company) => company.name) ||
-      [],
+    cast: CAST,
+    actors: CAST,
 
-    cast,
-
-    actors: cast,
-
-    characters: cast
+    characters: CAST
       .map((person) => person.character)
       .filter(Boolean),
 
-    director: directors,
+    director: DIRECTORS,
+    directors: DIRECTORS,
 
-    directors,
+    writer: WRITERS,
+    writers: WRITERS,
 
-    writer: writers,
+    logo: undefined,
 
-    writers,
+    trailer: TRAILER,
+
+    trailers: [
+      TRAILER
+    ],
+
+    trailerStreams: [],
+
+    videos: episodes,
 
     links: [
       {
         name: "IMDb",
         category: "imdb",
-        url: `https://www.imdb.com/title/${IMDB_ID}/`
+        url: "https://www.imdb.com/title/tt0090407/"
       },
       {
         name: "TMDB",
         category: "tmdb",
-        url: `https://www.themoviedb.org/tv/${TMDB_ID}`
+        url: "https://www.themoviedb.org/tv/70787"
       },
       {
         name: "Trakt",
         category: "trakt",
-        url: `https://trakt.tv/shows/${TRAKT_ID}`
+        url: "https://trakt.tv/shows/1307"
       },
       {
         name: "TVDB",
         category: "tvdb",
-        url: `https://thetvdb.com/series/choushinsei-flashman`
+        url: "https://thetvdb.com/series/choushinsei-flashman"
       },
       {
         name: "MDBList",
         category: "mdblist",
-        url: `https://mdblist.com/show/${MDBLIST_ID}`
+        url: "https://mdblist.com/show/1wr5i"
       }
-    ],
-
-    
-genre:
-  first(
-    tmdb?.genres?.map((g) => g.name),
-    cinemetaData?.meta?.genres,
-    mdblist?.genres
-  ) || [],
-
-genres:
-  first(
-    tmdb?.genres?.map((g) => g.name),
-    cinemetaData?.meta?.genres,
-    mdblist?.genres
-  ) || [],
-
-country:
-  tmdb?.origin_country ||
-  cinemetaData?.meta?.country ||
-  ["JP"],
-
-language:
-  first(
-    tmdb?.original_language,
-    cinemetaData?.meta?.language,
-    "ja"
-  ),
-
-spokenLanguage:
-  first(
-    tmdb?.spoken_languages?.[0]?.iso_639_1,
-    cinemetaData?.meta?.language,
-    "ja"
-  ),
-
-runtime:
-  first(
-    tmdb?.episode_run_time?.[0],
-    cinemetaData?.meta?.runtime,
-    mdblist?.runtime,
-    20
-  ),
-
-rating:
-  first(
-    tmdbRating,
-    imdbRating,
-    cinemetaData?.meta?.imdbRating
-  ),
-
-imdbRating:
-  first(
-    imdbRating,
-    cinemetaData?.meta?.imdbRating,
-    tmdbRating
-  ),
-
-imdbVotes:
-  first(
-    cinemetaData?.meta?.imdbVotes,
-    imdbData?.d?.[0]?.v
-  ),
-
-network:
-  first(
-    tmdb?.networks?.[0]?.name,
-    cinemetaData?.meta?.network,
-    mdblist?.network
-  ),
-
-productionCompanies:
-  tmdb?.production_companies?.map((x) => x.name) ||
-  cinemetaData?.meta?.productionCompanies ||
-  mdblist?.production_companies ||
-  [],
-
-production_companies:
-  tmdb?.production_companies?.map((x) => x.name) ||
-  cinemetaData?.meta?.productionCompanies ||
-  mdblist?.production_companies ||
-  [],
-
-logo:
-  cinemetaData?.meta?.logo ||
-  (
-    tmdb?.logo_path
-      ? `https://image.tmdb.org/t/p/original${tmdb.logo_path}`
-      : undefined
-  ),
-
-tagline:
-  first(
-    tmdb?.tagline,
-    cinemetaData?.meta?.tagline,
-    mdblist?.tagline
-  ),
-
-videos: episodes,
-
-    trailer: [
-      "https://youtu.be/uJ57aEFkm8M?si=jmeRxSXil61g6Eb3"
-    ],
-
-    trailerStreams: [
-      "https://youtu.be/uJ57aEFkm8M?si=jmeRxSXil61g6Eb3"
     ],
 
     behaviorHints: {
       defaultVideoId: "super-sentai-flashman:1:1"
     }
   };
-
-  return meta;
 }
 
 export async function buildMetadata() {
-  return await getMetadata();
+  return getMetadata();
 }
