@@ -13,7 +13,7 @@ export async function getEpisodes(seriesId) {
   // Obtener reparto principal de la serie
   const creditsUrl =
     `https://api.themoviedb.org/3/tv/${series.tmdbId}/credits` +
-    `?language=en-US` +
+    `?api_key=${process.env.TMDB_API_KEY}` +
     `&language=es-MX`;
 
   const creditsResponse = await fetch(creditsUrl, {
@@ -47,7 +47,7 @@ export async function getEpisodes(seriesId) {
     const seasonUrl =
       `https://api.themoviedb.org/3/tv/${series.tmdbId}/season/` +
       `${season.season_number}` +
-      `?language=en-US` +
+      `?api_key=${process.env.TMDB_API_KEY}` +
       `&language=es-MX`;
 
     const response = await fetch(seasonUrl, {
@@ -73,7 +73,7 @@ export async function getEpisodes(seriesId) {
         const fallbackUrl =
           `https://api.themoviedb.org/3/tv/${series.tmdbId}/season/` +
           `${season.season_number}/episode/${episode.episode_number}` +
-          `?language=en-US` +
+          `?api_key=${process.env.TMDB_API_KEY}` +
           `&language=en-US`;
 
         const fallbackResponse = await fetch(fallbackUrl, {
