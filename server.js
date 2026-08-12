@@ -17,6 +17,10 @@ app.use((req, res, next) => {
 
 const PORT = Number(process.env.PORT || 7070);
 
+app.get("/", (req, res) => {
+  res.json(manifest);
+});
+
 app.get("/manifest.json", (req, res) => {
   res.json(manifest);
 });
