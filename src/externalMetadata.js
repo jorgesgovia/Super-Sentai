@@ -93,7 +93,7 @@ export async function mergeExternalMetadata(meta, imdbId) {
    * ============================================================
    */
 
-  const tmdbToken = process.env.TMDB_API_TOKEN;
+  const tmdbToken = process.env.TMDB_API_KEY;
 
   if (tmdbToken && meta?.tmdb_id) {
     try {
