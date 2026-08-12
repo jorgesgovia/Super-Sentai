@@ -515,7 +515,7 @@ tagline:
 
 videos: episodes,
 
-    trailers: [
+    trailer: [
       "https://youtu.be/uJ57aEFkm8M?si=jmeRxSXil61g6Eb3"
     ],
 
