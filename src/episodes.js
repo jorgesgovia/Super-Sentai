@@ -13,10 +13,15 @@ export async function getEpisodes(seriesId) {
   // Obtener reparto principal de la serie
   const creditsUrl =
     `https://api.themoviedb.org/3/tv/${series.tmdbId}/credits` +
-    `?api_key=${process.env.TMDB_API_KEY}` +
+    `?language=en-US` +
     `&language=es-MX`;
 
-  const creditsResponse = await fetch(creditsUrl);
+  const creditsResponse = await fetch(creditsUrl, {
+  headers: {
+    Authorization: `Bearer ${process.env.TMDB_API_KEY}`,
+    accept: "application/json"
+  }
+});
 
   let cast = [];
 
@@ -42,10 +47,15 @@ export async function getEpisodes(seriesId) {
     const seasonUrl =
       `https://api.themoviedb.org/3/tv/${series.tmdbId}/season/` +
       `${season.season_number}` +
-      `?api_key=${process.env.TMDB_API_KEY}` +
+      `?language=en-US` +
       `&language=es-MX`;
 
-    const response = await fetch(seasonUrl);
+    const response = await fetch(seasonUrl, {
+    headers: {
+      Authorization: `Bearer ${process.env.TMDB_API_KEY}`,
+      accept: "application/json"
+    }
+  });
 
     if (!response.ok) {
       throw new Error(
@@ -63,10 +73,15 @@ export async function getEpisodes(seriesId) {
         const fallbackUrl =
           `https://api.themoviedb.org/3/tv/${series.tmdbId}/season/` +
           `${season.season_number}/episode/${episode.episode_number}` +
-          `?api_key=${process.env.TMDB_API_KEY}` +
+          `?language=en-US` +
           `&language=en-US`;
 
-        const fallbackResponse = await fetch(fallbackUrl);
+        const fallbackResponse = await fetch(fallbackUrl, {
+      headers: {
+        Authorization: `Bearer ${process.env.TMDB_API_KEY}`,
+        accept: "application/json"
+      }
+    });
 
         if (fallbackResponse.ok) {
           const fallbackEpisode = await fallbackResponse.json();
