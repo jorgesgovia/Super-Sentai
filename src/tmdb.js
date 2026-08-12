@@ -1,24 +1,32 @@
-export async function getTmdbSeries(tmdbId) {
-  const apiKey = process.env.TMDB_API_KEY;
+async function tmdbFetch(url) {
+  const token = process.env.TMDB_API_KEY;
 
-  if (!apiKey) {
+  if (!token) {
     throw new Error("Falta TMDB_API_KEY");
   }
 
-  const url =
-    `https://api.themoviedb.org/3/tv/${tmdbId}` +
-    `?api_key=${apiKey}` +
-    `&language=es-MX` +
-    `&append_to_response=credits,external_ids,videos,images` +
-    `&include_image_language=es,null,en,ja`;
-
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      accept: "application/json"
+    }
+  });
 
   if (!response.ok) {
     throw new Error(`TMDB respondió ${response.status}`);
   }
 
-  const data = await response.json();
+  return await response.json();
+}
+
+export async function getTmdbSeries(tmdbId) {
+  const url =
+    `https://api.themoviedb.org/3/tv/${tmdbId}` +
+    `?language=es-MX` +
+    `&append_to_response=credits,external_ids,videos,images` +
+    `&include_image_language=es,null,en,ja`;
+
+  const data = await tmdbFetch(url);
 
   const logo =
     data.images?.logos?.find(x => x.iso_639_1 === "es") ||
@@ -34,22 +42,11 @@ export async function getTmdbSeries(tmdbId) {
 }
 
 export async function getTmdbSeason(tmdbId, seasonNumber) {
-  const apiKey = process.env.TMDB_API_KEY;
-
-  if (!apiKey) {
-    throw new Error("Falta TMDB_API_KEY");
-  }
-
   const url =
     `https://api.themoviedb.org/3/tv/${tmdbId}/season/${seasonNumber}` +
-    `?api_key=${apiKey}` +
-    `&language=es-MX`;
+    `?language=es-MX` +
+    `&append_to_response=credits,videos,images` +
+    `&include_image_language=es,null,en,ja`;
 
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error(`TMDB respondió ${response.status}`);
-  }
-
-  return await response.json();
+  return await tmdbFetch(url);
 }
