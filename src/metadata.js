@@ -251,9 +251,9 @@ const meta = {
       tmdb?.original_name ||
       "Choushinsei Flashman",
 
-    poster: cinemetaData?.meta?.poster || POSTER,
+    poster: POSTER,
 
-    background: cinemetaData?.meta?.background || BACKGROUND,
+    background: BACKGROUND,
 
     description:
       tmdb?.overview ||
@@ -515,9 +515,13 @@ tagline:
 
 videos: episodes,
 
-    trailers: [],
+    trailers: [
+      "https://youtu.be/uJ57aEFkm8M?si=jmeRxSXil61g6Eb3"
+    ],
 
-    trailerStreams: [],
+    trailerStreams: [
+      "https://youtu.be/uJ57aEFkm8M?si=jmeRxSXil61g6Eb3"
+    ],
 
     behaviorHints: {
       defaultVideoId: "super-sentai-flashman:1:1"
