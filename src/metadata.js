@@ -252,9 +252,9 @@ const meta = {
       tmdb?.original_name ||
       "Choushinsei Flashman",
 
-    poster: POSTER,
+    poster: cinemetaData?.meta?.poster || POSTER,
 
-    background: BACKGROUND,
+    background: cinemetaData?.meta?.background || BACKGROUND,
 
     description:
       tmdb?.overview ||
