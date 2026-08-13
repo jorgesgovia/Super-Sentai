@@ -500,6 +500,8 @@ export async function mergeExternalMetadata(meta, imdbId) {
       cm.rating
     ),
 
+    tmdbRating,
+
     imdbRating,
 
     imdbVotes,
