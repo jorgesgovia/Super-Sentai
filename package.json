@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "Super Sentai addon para Nuvio",
   "type": "module",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "dotenv": "^17.0.0",
