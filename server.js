@@ -373,7 +373,31 @@ app.get("/meta/:type/:id.json", async (req, res) => {
       /*
        * Nuestros episodios conservan IDs internos para Drive.
        */
-      videos
+      videos,
+
+      /*
+       * ========================================================
+       * MEDIA PERSONALIZADO DEL ADDON
+       * ========================================================
+       *
+       * Estos dos campos son deliberadamente los ÚLTIMOS.
+       *
+       * No permitimos que ninguna metadata externa sustituya:
+       *
+       * - nuestro background
+       * - nuestro trailer de YouTube
+       *
+       * metadata.js sigue siendo la fuente manual de estos datos.
+       * ========================================================
+       */
+
+      background:
+        metadata.background,
+
+      trailerYtIds:
+        Array.isArray(metadata.trailerYtIds)
+          ? metadata.trailerYtIds
+          : []
     };
 
 
