@@ -57,6 +57,10 @@ export async function getMetadata() {
       {
         source: "tmdb",
         value: 7.5
+      },
+      {
+        source: "mdblist",
+        value: 7.5
       }
     ],
 
