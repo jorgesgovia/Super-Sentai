@@ -4,6 +4,7 @@ import cors from "cors";
 
 import { getMetadata } from "./src/metadata.js";
 import { getStreams } from "./src/streams.js";
+import { mergeExternalMetadata } from "./src/externalMetadata.js";
 
 const app = express();
 
@@ -271,8 +272,41 @@ app.get("/meta/:type/:id.json", async (req, res) => {
      * compatible con el flujo de Nuvio/Stremio.
      */
 
+    /*
+     * ========================================================
+     * ENRIQUECIMIENTO EXTERNO
+     * ========================================================
+     *
+     * Integramos Cinemeta + TMDB sobre nuestra metadata manual.
+     *
+     * metadata.js sigue siendo nuestra fuente manual.
+     * externalMetadata.js agrega:
+     *
+     * - TMDB rating
+     * - clasificación
+     * - creador
+     * - elenco
+     * - productoras
+     * - network
+     * - géneros
+     * - información adicional
+     *
+     * El resultado conserva los campos personalizados
+     * protegidos en externalMetadata.js.
+     */
+
+    const enrichedMetadata =
+      await mergeExternalMetadata(
+        metadata,
+        metadata.imdb_id
+      );
+
+    /*
+     * Conservamos nuestros videos personalizados.
+     */
+
     const finalMeta = {
-      ...metadata,
+      ...enrichedMetadata,
       videos
     };
 
