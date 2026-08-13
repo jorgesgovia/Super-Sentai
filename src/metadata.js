@@ -1,6 +1,6 @@
 export async function getMetadata() {
   return {
-    id: "tt0090407",
+    id: "super-sentai-flashman",
 
     imdb_id: "tt0090407",
 
