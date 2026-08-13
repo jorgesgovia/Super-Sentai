@@ -45,6 +45,10 @@ export async function getMetadata() {
 
     tmdbRating: 8.0,
 
+    tmdb_rating: 8.0,
+
+    tmdbVoteAverage: 8.0,
+
     language: "ja",
 
     originalLanguage: "Japanese",
