@@ -73,12 +73,19 @@ tmdbScore: 8.0,
 
     certificate: "TV-PG",
 
-    ageRating: "TV-PG"
-tmdbScore: 80,
+    ageRating: "TV-PG",
 
-    tmdb_rating: 8.0,
+    language: "ja",
 
-    tmdbVoteAverage: 8.0,
+    originalLanguage: "Japanese",
+
+    spokenLanguages: ["Japanese"],
+
+    spokenLanguage: "ja",
+
+    languages: ["ja"],
+
+    country: "JP"
 
   };
 }
