@@ -99,6 +99,10 @@ tmdbScore: 8.0,
 
     country: "JP",
 
+    trailerYtIds: [
+      "uJ57aEFkm8M"
+    ],
+
     certificate: "TV-PG",
 
     certification: "L",
