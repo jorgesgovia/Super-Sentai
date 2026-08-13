@@ -49,6 +49,11 @@ export async function getMetadata() {
     rating: 8.2,
     imdbRating: 8.2,
 
+    tmdb: {
+      id: 70787,
+      rating: 7.5
+    },
+
     tmdbRating: 7.5,
 tmdbRating: 8.0,
 tmdbScore: 8.0,
