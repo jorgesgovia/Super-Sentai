@@ -342,6 +342,19 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
   /*
    * ============================================================
+   * CUSTOM ADDON MEDIA
+   * ============================================================
+   *
+   * Preserve the manually defined background and YouTube trailers
+   * from metadata.js after external enrichment.
+   */
+  const customBackground = meta?.background;
+  const customTrailerYtIds = Array.isArray(meta?.trailerYtIds)
+    ? meta.trailerYtIds.filter(Boolean)
+    : [];
+
+  /*
+   * ============================================================
    * BACKGROUND
    * ============================================================
    */
@@ -448,7 +461,8 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
     poster,
 
-    background,
+    background: customBackground || background,
+    trailerYtIds: customTrailerYtIds,
 
     logo,
 
