@@ -42,10 +42,10 @@ export async function getMetadata() {
     status: "Ended",
 
     rating: 81,
+    rating: 8.2,
+    imdbRating: 8.2,
 
-    rating: 7.5,
-
-    imdbRating: 8.0,
+    tmdbRating: 7.5,
 tmdbRating: 8.0,
 tmdbScore: 8.0,
 
