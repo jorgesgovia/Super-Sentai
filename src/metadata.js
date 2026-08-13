@@ -43,6 +43,10 @@ export async function getMetadata() {
 
     imdbRating: 8.0,
 
+    score: 80,
+
+    tmdbScore: 80,
+
     tmdbRating: 8.0,
 
     tmdb_rating: 8.0,
