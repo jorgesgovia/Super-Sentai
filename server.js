@@ -4,6 +4,7 @@ import cors from "cors";
 
 import { getMetadata } from "./src/metadata.js";
 import { getStreams } from "./src/streams.js";
+import { getEpisodes } from "./src/episodes.js";
 import { mergeExternalMetadata } from "./src/externalMetadata.js";
 
 const app = express();
@@ -189,7 +190,10 @@ app.get("/meta/:type/:id.json", async (req, res) => {
      * Solo nuestra serie.
      */
 
-    if (id !== "super-sentai-flashman") {
+    if (
+      id !== "70787" &&
+      id !== "super-sentai-flashman"
+    ) {
       return res.status(404).json({
         meta: null
       });
@@ -221,10 +225,56 @@ app.get("/meta/:type/:id.json", async (req, res) => {
      * ========================================================
      */
 
-    const videos = (metadata.videos || []).map(
+    /*
+     * ========================================================
+     * EPISODIOS
+     * ========================================================
+     *
+     * TMDB proporciona la información del episodio:
+     *
+     * - título
+     * - descripción
+     * - fecha
+     * - thumbnail
+     * - duración
+     * - rating
+     *
+     * Pero NO usamos el ID TMDB para reproducir.
+     *
+     * Cada episodio recibe nuestro ID interno:
+     *
+     * super-sentai-flashman:1:1
+     * super-sentai-flashman:1:2
+     * ...
+     *
+     * De esta manera Nuvio puede mostrar la información de
+     * TMDB mientras /stream continúa resolviendo Google Drive.
+     * ========================================================
+     */
+
+    let tmdbEpisodes = [];
+
+    try {
+      tmdbEpisodes = await getEpisodes(
+        "super-sentai-flashman"
+      );
+
+      console.log(
+        "EPISODIOS TMDB OBTENIDOS:",
+        tmdbEpisodes.length
+      );
+    } catch (error) {
+      console.error(
+        "ERROR OBTENIENDO EPISODIOS TMDB:",
+        error.message
+      );
+    }
+
+    const videos = tmdbEpisodes.map(
       (episode, index) => {
 
         const episodeNumber =
+          Number(episode.episode) ||
           index + 1;
 
         return {
@@ -232,6 +282,11 @@ app.get("/meta/:type/:id.json", async (req, res) => {
             `super-sentai-flashman:1:${episodeNumber}`,
 
           title:
+            episode.title ||
+            `Episodio ${episodeNumber}`,
+
+          name:
+            episode.name ||
             episode.title ||
             `Episodio ${episodeNumber}`,
 
@@ -254,13 +309,30 @@ app.get("/meta/:type/:id.json", async (req, res) => {
             episode.description ||
             "",
 
+          description:
+            episode.description ||
+            episode.overview ||
+            "",
+
           runtime:
             episode.runtime ||
-            30
+            30,
+
+          rating:
+            episode.rating ||
+            null,
+
+          votes:
+            episode.votes ||
+            0,
+
+          imdbRating:
+            episode.imdbRating ||
+            episode.rating ||
+            null
         };
       }
     );
-
 
     /*
      * Construimos la metadata final.
@@ -274,39 +346,33 @@ app.get("/meta/:type/:id.json", async (req, res) => {
 
     /*
      * ========================================================
-     * ENRIQUECIMIENTO EXTERNO
+     * METADATA FINAL
      * ========================================================
      *
-     * Integramos Cinemeta + TMDB sobre nuestra metadata manual.
+     * Nuvio recibe nuestra metadata directamente.
      *
-     * metadata.js sigue siendo nuestra fuente manual.
-     * externalMetadata.js agrega:
+     * El ID público de la serie es 70787.
      *
-     * - TMDB rating
-     * - clasificación
-     * - creador
-     * - elenco
-     * - productoras
-     * - network
-     * - géneros
-     * - información adicional
-     *
-     * El resultado conserva los campos personalizados
-     * protegidos en externalMetadata.js.
+     * La reproducción continúa utilizando nuestros IDs
+     * internos super-sentai-flashman:1:X.
+     * ========================================================
      */
-
-    const enrichedMetadata =
-      await mergeExternalMetadata(
-        metadata,
-        metadata.imdb_id
-      );
 
     /*
      * Conservamos nuestros videos personalizados.
      */
 
     const finalMeta = {
-      ...enrichedMetadata,
+      ...metadata,
+
+      /*
+       * El ID que Nuvio pidió debe coincidir con el ID público.
+       */
+      id: "70787",
+
+      /*
+       * Nuestros episodios conservan IDs internos para Drive.
+       */
       videos
     };
 
