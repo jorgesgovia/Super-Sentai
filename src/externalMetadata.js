@@ -502,6 +502,11 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
     tmdbRating,
 
+    vote_average:
+      typeof tmdb?.vote_average === "number"
+        ? tmdb.vote_average
+        : undefined,
+
     imdbRating,
 
     imdbVotes,
