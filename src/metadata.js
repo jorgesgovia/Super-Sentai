@@ -42,15 +42,8 @@ export async function getMetadata() {
     rating: 8.0,
 
     imdbRating: 8.0,
-tmdbScore: 80,
-
-    tmdbRating: 8.0,
-
-    tmdb_rating: 8.0,
-
-    tmdbVoteAverage: 8.0,
-
-    tmdbScore: 8.0,
+tmdbRating: 8.0,
+tmdbScore: 8.0,
 
     tmdb_score: 8.0,
 
@@ -81,26 +74,11 @@ tmdbScore: 80,
     certificate: "TV-PG",
 
     ageRating: "TV-PG"
-    score: 80,
-
-    tmdbScore: 80,
+tmdbScore: 80,
 
     tmdb_rating: 8.0,
 
     tmdbVoteAverage: 8.0,
-
-    tmdb: {
-      rating: 8.0,
-      score: 80
-    },
-
-    links: [
-      {
-        name: "TMDB",
-        category: "tmdb",
-        url: "https://www.themoviedb.org/tv/70787"
-      }
-    ]
 
   };
 }
