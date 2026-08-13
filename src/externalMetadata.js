@@ -1,6 +1,7 @@
 import https from "node:https";
+import { getTmdbSeries } from "./tmdb.js";
 
-function getJSON(url, headers = {}) {
+function getJSON(url, headers = {}, redirects = 0) {
   return new Promise((resolve, reject) => {
     const req = https.get(url, { headers }, (res) => {
       let data = "";
@@ -10,8 +11,47 @@ function getJSON(url, headers = {}) {
       });
 
       res.on("end", () => {
+
+        /*
+         * Seguir redirecciones HTTP.
+         *
+         * Cinemeta actualmente puede responder 307.
+         */
+
+        if (
+          res.statusCode >= 300 &&
+          res.statusCode < 400 &&
+          res.headers.location
+        ) {
+          if (redirects >= 5) {
+            reject(
+              new Error(
+                `Demasiadas redirecciones en ${url}`
+              )
+            );
+            return;
+          }
+
+          getJSON(
+            new URL(
+              res.headers.location,
+              url
+            ).toString(),
+            headers,
+            redirects + 1
+          )
+            .then(resolve)
+            .catch(reject);
+
+          return;
+        }
+
         if (res.statusCode < 200 || res.statusCode >= 300) {
-          reject(new Error(`HTTP ${res.statusCode} en ${url}`));
+          reject(
+            new Error(
+              `HTTP ${res.statusCode} en ${url}`
+            )
+          );
           return;
         }
 
@@ -97,12 +137,19 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
   if (tmdbToken && meta?.tmdb_id) {
     try {
-      tmdb = await getJSON(
-        `https://api.themoviedb.org/3/tv/${meta.tmdb_id}?language=es-MX&append_to_response=credits,images`,
-        {
-          Authorization: `Bearer ${tmdbToken}`,
-          accept: "application/json",
-        }
+      /*
+       * Usamos el cliente TMDB oficial del addon.
+       *
+       * Esto mantiene una sola implementación de:
+       * - Bearer token
+       * - credits
+       * - external_ids
+       * - videos
+       * - images
+       */
+
+      tmdb = await getTmdbSeries(
+        meta.tmdb_id
       );
 
       console.log(
