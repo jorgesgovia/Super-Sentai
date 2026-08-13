@@ -1,13 +1,24 @@
 async function tmdbFetch(url) {
-  const token = process.env.TMDB_API_KEY;
+  const apiKey = process.env.TMDB_API_KEY;
 
-  if (!token) {
+  if (!apiKey) {
     throw new Error("Falta TMDB_API_KEY");
   }
 
-  const response = await fetch(url, {
+  /*
+   * TMDB_API_KEY es una API key v3 de 32 caracteres.
+   *
+   * Se envía como ?api_key=...
+   * y no como Authorization: Bearer.
+   */
+
+  const separator = url.includes("?") ? "&" : "?";
+
+  const authenticatedUrl =
+    `${url}${separator}api_key=${encodeURIComponent(apiKey)}`;
+
+  const response = await fetch(authenticatedUrl, {
     headers: {
-      Authorization: `Bearer ${token}`,
       accept: "application/json"
     }
   });
