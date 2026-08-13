@@ -43,6 +43,8 @@ export async function getMetadata() {
 
     rating: 81,
 
+    rating: 7.5,
+
     imdbRating: 8.0,
 tmdbRating: 8.0,
 tmdbScore: 8.0,
@@ -74,6 +76,8 @@ tmdbScore: 8.0,
     country: "JP",
 
     certificate: "TV-PG",
+
+    certification: "L",
 
     ageRating: "TV-PG",
 
