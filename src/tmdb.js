@@ -1,11 +1,8 @@
 async function tmdbFetch(url) {
-  // Preferimos el token largo de TMDB (v4).
-  // Si no existe, usamos la API key corta (v3) como respaldo.
   const apiKey = process.env.TMDB_API_KEY;
-  const apiToken = process.env.TMDB_API_TOKEN;
 
-  if (!apiKey && !apiToken) {
-    throw new Error("Falta TMDB_API_TOKEN o TMDB_API_KEY");
+  if (!apiKey) {
+    throw new Error("Falta TMDB_API_KEY");
   }
 
   /*
@@ -17,22 +14,13 @@ async function tmdbFetch(url) {
 
   const separator = url.includes("?") ? "&" : "?";
 
-  let authenticatedUrl = url;
-  const headers = {
-    accept: "application/json"
-  };
-
-  if (apiToken) {
-    // TMDB API Read Access Token (v4)
-    headers.Authorization = `Bearer ${apiToken}`;
-  } else {
-    // TMDB API Key (v3)
-    authenticatedUrl =
-      `${url}${separator}api_key=${encodeURIComponent(apiKey)}`;
-  }
+  const authenticatedUrl =
+    `${url}${separator}api_key=${encodeURIComponent(apiKey)}`;
 
   const response = await fetch(authenticatedUrl, {
-    headers
+    headers: {
+      accept: "application/json"
+    }
   });
 
   if (!response.ok) {

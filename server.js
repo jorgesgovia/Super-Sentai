@@ -63,13 +63,13 @@ app.get("/manifest.json", (req, res) => {
       {
         name: "meta",
         types: ["series"],
-        idPrefixes: ["super-sentai-"]
+        idPrefixes: ["70787"]
       },
 
       {
         name: "stream",
         types: ["series"],
-        idPrefixes: ["super-sentai-"]
+        idPrefixes: ["70787"]
       }
     ],
 
@@ -279,7 +279,7 @@ app.get("/meta/:type/:id.json", async (req, res) => {
 
         return {
           id:
-            `super-sentai-flashman:1:${episodeNumber}`,
+            `70787:1:${episodeNumber}`,
 
           title:
             episode.title ||
@@ -501,7 +501,7 @@ app.get("/stream/:type/:id.json", async (req, res) => {
 
     if (
       !id.startsWith(
-        "super-sentai-flashman:"
+        "70787:"
       )
     ) {
 

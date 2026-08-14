@@ -293,165 +293,33 @@ export async function mergeExternalMetadata(meta, imdbId) {
    * ============================================================
    * PRODUCTORAS
    * ============================================================
-   *
-   * Nuvio espera MetaCompany:
-   * {
-   *   name,
-   *   logo,
-   *   tmdbId
-   * }
-   *
-   * El tmdbId es especialmente importante porque Nuvio lo usa
-   * para hacer navegable la sección de producción.
    */
 
   const tmdbProductionCompanies =
-    Array.isArray(tmdb?.production_companies)
-      ? tmdb.production_companies
-          .filter((company) => company?.name)
-          .map((company) => ({
-            name: company.name,
-            logo: company.logo_path
-              ? `https://image.tmdb.org/t/p/w185${company.logo_path}`
-              : undefined,
-            tmdbId:
-              typeof company.id === "number"
-                ? company.id
-                : undefined,
-          }))
-      : [];
+    tmdb?.production_companies?.map(
+      (company) => company.name
+    ) || [];
 
   const cinemetaProductionCompanies =
     Array.isArray(cm.productionCompanies)
-      ? cm.productionCompanies.map((company) => {
-          if (typeof company === "string") {
-            return { name: company };
-          }
-
-          return {
-            name: company?.name,
-            logo:
-              company?.logo ||
-              company?.logo_path ||
-              undefined,
-            tmdbId:
-              typeof company?.tmdbId === "number"
-                ? company.tmdbId
-                : undefined,
-          };
-        })
-      : [];
-
-  const addonProductionCompanies =
-    Array.isArray(meta?.productionCompanies)
-      ? meta.productionCompanies.map((company) => {
-          if (typeof company === "string") {
-            return { name: company };
-          }
-
-          return {
-            name: company?.name,
-            logo:
-              company?.logo ||
-              company?.logo_path ||
-              undefined,
-            tmdbId:
-              typeof company?.tmdbId === "number"
-                ? company.tmdbId
-                : undefined,
-          };
-        })
+      ? cm.productionCompanies.map((company) =>
+          typeof company === "string"
+            ? company
+            : company?.name
+        )
       : [];
 
   const productionCompanies = [
-    ...tmdbProductionCompanies,
-    ...cinemetaProductionCompanies,
-    ...addonProductionCompanies,
-  ]
-    .filter((company) => company?.name)
-    .filter(
-      (company, index, array) =>
-        index ===
-        array.findIndex(
-          (x) =>
-            x?.name === company?.name &&
-            (
-              x?.tmdbId === company?.tmdbId ||
-              (!x?.tmdbId && !company?.tmdbId)
-            )
-        )
-    );
-
-  /*
-   * ============================================================
-   * CREADORES
-   * ============================================================
-   *
-   * TMDB entrega los creadores de series en created_by.
-   * También aceptamos datos procedentes de Cinemeta/addon.
-   */
-
-  const tmdbCreators =
-    Array.isArray(tmdb?.created_by)
-      ? tmdb.created_by
-          .filter((person) => person?.name)
-          .map((person) => ({
-            name: person.name,
-            photo: person.profile_path
-              ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
-              : undefined,
-            tmdbId:
-              typeof person.id === "number"
-                ? person.id
-                : undefined,
-          }))
-      : [];
-
-  const cinemetaCreators =
-    Array.isArray(cm.creators)
-      ? cm.creators.map((person) =>
-          typeof person === "string"
-            ? { name: person }
-            : {
-                name: person?.name,
-                photo:
-                  person?.photo ||
-                  person?.profile ||
-                  undefined,
-                tmdbId:
-                  typeof person?.tmdbId === "number"
-                    ? person.tmdbId
-                    : undefined,
-              }
-        )
-      : [];
-
-  const addonCreators =
-    Array.isArray(meta?.creators)
-      ? meta.creators.map((person) =>
-          typeof person === "string"
-            ? { name: person }
-            : person
-        )
-      : Array.isArray(meta?.creator)
-        ? meta.creator.map((person) =>
-            typeof person === "string"
-              ? { name: person }
-              : person
-          )
-        : meta?.creator
-          ? [
-              typeof meta.creator === "string"
-                ? { name: meta.creator }
-                : meta.creator
-            ]
-          : [];
-
-  const creators = uniquePeople([
-    ...tmdbCreators,
-    ...cinemetaCreators,
-    ...addonCreators,
-  ]);
+    ...new Set(
+      [
+        ...tmdbProductionCompanies,
+        ...cinemetaProductionCompanies,
+        ...(Array.isArray(meta?.productionCompanies)
+          ? meta.productionCompanies
+          : []),
+      ].filter(Boolean)
+    ),
+  ];
 
   /*
    * ============================================================
@@ -579,214 +447,12 @@ export async function mergeExternalMetadata(meta, imdbId) {
    * ============================================================
    * RED / CANAL
    * ============================================================
-   *
-   * Nuvio espera las cadenas exactamente como MetaCompany,
-   * incluyendo tmdbId. Ese ID permite que al pulsar la cadena
-   * Nuvio abra su navegación TMDB.
    */
-
-  const tmdbNetworks =
-    Array.isArray(tmdb?.networks)
-      ? tmdb.networks
-          .filter((network) => network?.name)
-          .map((network) => ({
-            name: network.name,
-            logo: network.logo_path
-              ? `https://image.tmdb.org/t/p/w185${network.logo_path}`
-              : undefined,
-            tmdbId:
-              typeof network.id === "number"
-                ? network.id
-                : undefined,
-          }))
-      : [];
-
-  const cinemetaNetworks =
-    Array.isArray(cm.networks)
-      ? cm.networks.map((network) => {
-          if (typeof network === "string") {
-            return { name: network };
-          }
-
-          return {
-            name: network?.name,
-            logo:
-              network?.logo ||
-              network?.logo_path ||
-              undefined,
-            tmdbId:
-              typeof network?.tmdbId === "number"
-                ? network.tmdbId
-                : undefined,
-          };
-        })
-      : [];
-
-  const addonNetworks =
-    Array.isArray(meta?.networks)
-      ? meta.networks.map((network) => {
-          if (typeof network === "string") {
-            return { name: network };
-          }
-
-          return {
-            name: network?.name,
-            logo:
-              network?.logo ||
-              network?.logo_path ||
-              undefined,
-            tmdbId:
-              typeof network?.tmdbId === "number"
-                ? network.tmdbId
-                : undefined,
-          };
-        })
-      : [];
-
-  const networks = [
-    ...tmdbNetworks,
-    ...cinemetaNetworks,
-    ...addonNetworks,
-  ]
-    .filter((network) => network?.name)
-    .filter(
-      (network, index, array) =>
-        index ===
-        array.findIndex(
-          (x) =>
-            x?.name === network?.name &&
-            (
-              x?.tmdbId === network?.tmdbId ||
-              (!x?.tmdbId && !network?.tmdbId)
-            )
-        )
-    );
-
-  const network = networks[0]?.name;
-
-
-  /*
-   * ============================================================
-   * NAVIGATION / EXTERNAL METADATA
-   * ============================================================
-   *
-   * Construimos explícitamente estos campos a partir de TMDB,
-   * Cinemeta y metadata local.
-   */
-
-        .filter(Boolean)
-    : [];
-
-  const cmNetworks = [
-    ...(Array.isArray(cm.networks) ? cm.networks : []),
-    cm.network
-  ]
-    .map((x) =>
-      typeof x === "string"
-        ? x
-        : x?.name
-    )
-    .filter(Boolean);
-
-  const networks = [
-    ...new Set([
-      ...(Array.isArray(meta?.networks) ? meta.networks : []),
-      meta?.network,
-      ...tmdbNetworks,
-      ...cmNetworks
-    ].filter(Boolean))
-  ];
 
   const network = first(
     meta?.network,
     cm.network,
-    networks[0]
-  );
-
-  const tmdbCreators = Array.isArray(tmdb?.created_by)
-    ? tmdb.created_by.map((person) => ({
-        name: person?.name,
-        id: person?.id,
-        photo: person?.profile_path
-          ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
-          : undefined
-      }))
-    : [];
-
-  const creatorPeople = uniquePeople([
-    ...tmdbCreators,
-    ...(Array.isArray(meta?.creators) ? meta.creators : []),
-    ...(Array.isArray(cm.creators) ? cm.creators : [])
-  ]);
-
-  const creator = first(
-    meta?.creator,
-    cm.creator,
-    creators[0]
-  );
-
-  const navigationLinks = [];
-
-  const externalIds = tmdb?.external_ids || {};
-
-  if (externalIds.imdb_id) {
-    navigationLinks.push({
-      name: "IMDb",
-      category: "imdb",
-      url: `https://www.imdb.com/title/${externalIds.imdb_id}`
-    });
-  }
-
-  if (tmdb?.id) {
-    navigationLinks.push({
-      name: "TMDB",
-      category: "tmdb",
-      url: `https://www.themoviedb.org/tv/${tmdb.id}`
-    });
-  }
-
-  if (externalIds.tvdb_id) {
-    navigationLinks.push({
-      name: "TheTVDB",
-      category: "tvdb",
-      url: `https://thetvdb.com/series/${externalIds.tvdb_id}`
-    });
-  }
-
-  if (tmdb?.homepage) {
-    navigationLinks.push({
-      name: "Official website",
-      category: "official",
-      url: tmdb.homepage
-    });
-  }
-
-  const links = [
-    ...(Array.isArray(meta?.links) ? meta.links : []),
-    ...(Array.isArray(cm.links) ? cm.links : []),
-    ...navigationLinks
-  ].filter(
-    (link, index, array) =>
-      link?.url &&
-      index ===
-        array.findIndex(
-          (x) => x?.url === link?.url
-        )
-  );
-
-  console.log(
-    "[externalMetadata] Networks:",
-    networks
-  );
-
-  console.log(
-    "[externalMetadata] Creators:",
-    creators
-  );
-
-  console.log(
-    "[externalMetadata] Navigation links:",
-    links
+    tmdb?.networks?.[0]?.name
   );
 
   /*
@@ -908,26 +574,9 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
     network,
 
-    networks,
-
     productionCompanies,
 
     production_companies: productionCompanies,
-
-    /*
-     * Creador/es de la serie.
-     *
-     * Nuvio no necesita estos campos para navegar cadenas/productoras,
-     * pero los exponemos para que la metadata completa quede disponible.
-     */
-    creator:
-      creators.length === 1
-        ? creators[0].name
-        : creators.length > 1
-          ? creators.map((person) => person.name)
-          : undefined,
-
-    creators,
 
     cast,
 
@@ -954,28 +603,6 @@ export async function mergeExternalMetadata(meta, imdbId) {
     links: [
       ...(Array.isArray(meta?.links) ? meta.links : []),
       ...(Array.isArray(cm.links) ? cm.links : []),
-
-      /*
-       * Enlaces externos generados directamente desde TMDB.
-       * La navegación interna de Nuvio hacia estas entidades
-       * utiliza networks/productionCompanies + tmdbId.
-       */
-
-      ...networks
-        .filter((network) => network?.tmdbId)
-        .map((network) => ({
-          name: network.name,
-          category: "Network",
-          url: `https://www.themoviedb.org/network/${network.tmdbId}`,
-        })),
-
-      ...productionCompanies
-        .filter((company) => company?.tmdbId)
-        .map((company) => ({
-          name: company.name,
-          category: "Production",
-          url: `https://www.themoviedb.org/company/${company.tmdbId}`,
-        })),
     ].filter(
       (link, index, array) =>
         index ===
