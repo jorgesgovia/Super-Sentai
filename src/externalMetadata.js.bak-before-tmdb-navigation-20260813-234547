@@ -622,35 +622,12 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
   /*
    * ============================================================
-   * ENTIDADES TMDB NAVEGABLES
-   * ============================================================
-   *
-   * Nuvio utiliza MetaCompany para construir la navegación
-   * de redes y productoras.
-   *
-   * Conservamos únicamente entidades que tengan:
-   *
-   * - name
-   * - tmdbId
-   *
-   * El ID debe ser numérico porque MetaCompany.tmdbId es Int?.
-   * ============================================================
-   */
-
-  /*
-   * ============================================================
    * METADATA FINAL
    * ============================================================
    */
 
   const merged = {
     ...meta,
-
-    /*
-     * ========================================================
-     * IDENTIDAD
-     * ========================================================
-     */
 
     imdb_id: first(
       meta?.imdb_id,
@@ -696,11 +673,8 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
     poster,
 
-    background:
-      customBackground || background,
-
-    trailerYtIds:
-      customTrailerYtIds,
+    background: customBackground || background,
+    trailerYtIds: customTrailerYtIds,
 
     logo,
 
@@ -742,20 +716,9 @@ export async function mergeExternalMetadata(meta, imdbId) {
       tmdb?.original_language
     ),
 
-    /*
-     * ========================================================
-     * GENEROS
-     * ========================================================
-     */
-
     genres,
-    genre: genres,
 
-    /*
-     * ========================================================
-     * RATINGS
-     * ========================================================
-     */
+    genre: genres,
 
     rating: first(
       meta?.rating,
@@ -771,57 +734,34 @@ export async function mergeExternalMetadata(meta, imdbId) {
         : undefined,
 
     imdbRating,
+
     imdbVotes,
 
     /*
-     * ========================================================
-     * NETWORK
-     * ========================================================
+     * Red/canal como objeto navegable para Nuvio.
      */
-
     network,
-
-    /*
-     * ========================================================
-     * NETWORKS
-     * ========================================================
-     *
-     * Conservamos los objetos producidos anteriormente.
-     */
 
     networks,
 
     /*
-     * ========================================================
-     * PRODUCTORAS
-     * ========================================================
+     * Productoras como objetos navegables para Nuvio.
      */
-
     productionCompanies,
 
-    production_companies:
-      productionCompanies,
-
-    /*
-     * ========================================================
-     * REPARTO
-     * ========================================================
-     */
+    production_companies: productionCompanies,
 
     cast,
+
     actors: cast,
 
     director: directors,
+
     directors,
 
     writer: writers,
-    writers,
 
-    /*
-     * ========================================================
-     * TAGLINE
-     * ========================================================
-     */
+    writers,
 
     tagline: first(
       meta?.tagline,
@@ -830,62 +770,36 @@ export async function mergeExternalMetadata(meta, imdbId) {
     ),
 
     /*
-     * ========================================================
-     * LINKS
-     * ========================================================
+     * Conservamos cualquier enlace que Cinemeta ya
+     * entregue, incluyendo referencias externas.
      */
-
     links: [
-      ...(Array.isArray(meta?.links)
-        ? meta.links
-        : []),
-
-      ...(Array.isArray(cm.links)
-        ? cm.links
-        : []),
+      ...(Array.isArray(meta?.links) ? meta.links : []),
+      ...(Array.isArray(cm.links) ? cm.links : []),
 
       /*
-       * TV ASAHI
+       * Navegación directa hacia las entidades TMDB.
+       *
+       * Estos enlaces son complementarios:
+       * Nuvio recibe además networks/productionCompanies
+       * con tmdbId para su propia navegación de entidades.
        */
 
-      ...(networks
-        .filter(
-          (item) =>
-            item?.name &&
-            Number.isInteger(item?.tmdbId) &&
-            item.tmdbId > 0
-        )
-        .map(
-          (item) => ({
-            name: item.name,
-            category: "Network",
-            url:
-              `https://www.themoviedb.org/network/${item.tmdbId}`
-          })
-        )
-      ),
+      ...networks
+        .filter((item) => item?.tmdbId)
+        .map((item) => ({
+          name: item.name,
+          category: "Network",
+          url: `https://www.themoviedb.org/network/${item.tmdbId}`,
+        })),
 
-      /*
-       * TOEI / PRODUCTORAS
-       */
-
-      ...(productionCompanies
-        .filter(
-          (item) =>
-            item?.name &&
-            Number.isInteger(item?.tmdbId) &&
-            item.tmdbId > 0
-        )
-        .map(
-          (item) => ({
-            name: item.name,
-            category: "Production",
-            url:
-              `https://www.themoviedb.org/company/${item.tmdbId}`
-          })
-        )
-      )
-
+      ...productionCompanies
+        .filter((item) => item?.tmdbId)
+        .map((item) => ({
+          name: item.name,
+          category: "Production",
+          url: `https://www.themoviedb.org/company/${item.tmdbId}`,
+        })),
     ].filter(
       (link, index, array) =>
         index ===
@@ -894,11 +808,11 @@ export async function mergeExternalMetadata(meta, imdbId) {
             x?.url === link?.url &&
             x?.name === link?.name
         )
-    )
+    ),
   };
 
   console.log(
-    "[externalMetadata] Generos:",
+    "[externalMetadata] Géneros:",
     genres.length
   );
 
@@ -909,22 +823,18 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
   console.log(
     "[externalMetadata] Productoras:",
-    productionCompanies.map(
-      (company) => ({
-        name: company.name,
-        tmdbId: company.tmdbId
-      })
-    )
+    productionCompanies.map((company) => ({
+      name: company.name,
+      tmdbId: company.tmdbId,
+    }))
   );
 
   console.log(
     "[externalMetadata] Networks:",
-    networks.map(
-      (item) => ({
-        name: item.name,
-        tmdbId: item.tmdbId
-      })
-    )
+    networks.map((item) => ({
+      name: item.name,
+      tmdbId: item.tmdbId,
+    }))
   );
 
   console.log(

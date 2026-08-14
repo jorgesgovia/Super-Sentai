@@ -646,12 +646,6 @@ export async function mergeExternalMetadata(meta, imdbId) {
   const merged = {
     ...meta,
 
-    /*
-     * ========================================================
-     * IDENTIDAD
-     * ========================================================
-     */
-
     imdb_id: first(
       meta?.imdb_id,
       cm.imdb_id,
@@ -663,6 +657,28 @@ export async function mergeExternalMetadata(meta, imdbId) {
       cm.tmdb_id,
       tmdb?.id
     ),
+
+    /*
+     * IMPORTANTE PARA NUVIO:
+     *
+     * Nuvio utiliza su integración TMDB para enriquecer
+     * networks y productionCompanies.
+     *
+     * Conservamos el ID TMDB real de la serie de forma
+     * explícita para que Nuvio pueda resolver:
+     *
+     * - tv asahi
+     * - Toei Company
+     *
+     * desde TMDB, en lugar de intentar fabricar enlaces
+     * desde el addon.
+     */
+    tmdbId:
+      first(
+        meta?.tmdbId,
+        cm.tmdbId,
+        tmdb?.id
+      ),
 
     tvdb_id: first(
       meta?.tvdb_id,
@@ -696,11 +712,8 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
     poster,
 
-    background:
-      customBackground || background,
-
-    trailerYtIds:
-      customTrailerYtIds,
+    background: customBackground || background,
+    trailerYtIds: customTrailerYtIds,
 
     logo,
 
@@ -742,20 +755,9 @@ export async function mergeExternalMetadata(meta, imdbId) {
       tmdb?.original_language
     ),
 
-    /*
-     * ========================================================
-     * GENEROS
-     * ========================================================
-     */
-
     genres,
-    genre: genres,
 
-    /*
-     * ========================================================
-     * RATINGS
-     * ========================================================
-     */
+    genre: genres,
 
     rating: first(
       meta?.rating,
@@ -771,57 +773,42 @@ export async function mergeExternalMetadata(meta, imdbId) {
         : undefined,
 
     imdbRating,
+
     imdbVotes,
 
     /*
-     * ========================================================
-     * NETWORK
-     * ========================================================
+     * Red/canal como objeto navegable para Nuvio.
      */
-
     network,
 
     /*
-     * ========================================================
-     * NETWORKS
-     * ========================================================
+     * Campos nativos de Nuvio.
      *
-     * Conservamos los objetos producidos anteriormente.
+     * Se entregan como MetaCompany:
+     * { name, logo, tmdbId }
      */
-
-    networks,
-
     /*
-     * ========================================================
-     * PRODUCTORAS
-     * ========================================================
+     * Datos TMDB reales.
+     *
+     * Nuvio puede utilizarlos junto con su integración TMDB.
      */
+    networks: networks,
 
-    productionCompanies,
+    productionCompanies:
 
     production_companies:
-      productionCompanies,
-
-    /*
-     * ========================================================
-     * REPARTO
-     * ========================================================
-     */
 
     cast,
+
     actors: cast,
 
     director: directors,
+
     directors,
 
     writer: writers,
-    writers,
 
-    /*
-     * ========================================================
-     * TAGLINE
-     * ========================================================
-     */
+    writers,
 
     tagline: first(
       meta?.tagline,
@@ -830,61 +817,37 @@ export async function mergeExternalMetadata(meta, imdbId) {
     ),
 
     /*
-     * ========================================================
-     * LINKS
-     * ========================================================
+     * Conservamos cualquier enlace que Cinemeta ya
+     * entregue, incluyendo referencias externas.
      */
-
     links: [
-      ...(Array.isArray(meta?.links)
-        ? meta.links
-        : []),
-
-      ...(Array.isArray(cm.links)
-        ? cm.links
-        : []),
-
-      /*
-       * TV ASAHI
+      ...(Array.isArray(meta?.links) ? meta.links : []),
+      ...(Array.isArray(cm.links) ? cm.links : [])
+    ]/*
+       * Navegación explícita de entidades TMDB.
+       *
+       * tv asahi = TMDB network 103
+       * Toei Company = TMDB company 5822
+       *
+       * Estos links son independientes de networks/
+       * productionCompanies y permiten a Nuvio resolver
+       * la entidad directamente.
        */
+      ...networks
+        .filter((item) => Number.isInteger(item?.tmdbId))
+        .map((item) => ({
+          name: item.name,
+          category: "Network",
+          url: `https://www.themoviedb.org/network/${item.tmdbId}`,
+        })),
 
-      ...(networks
-        .filter(
-          (item) =>
-            item?.name &&
-            Number.isInteger(item?.tmdbId) &&
-            item.tmdbId > 0
-        )
-        .map(
-          (item) => ({
-            name: item.name,
-            category: "Network",
-            url:
-              `https://www.themoviedb.org/network/${item.tmdbId}`
-          })
-        )
-      ),
-
-      /*
-       * TOEI / PRODUCTORAS
-       */
-
-      ...(productionCompanies
-        .filter(
-          (item) =>
-            item?.name &&
-            Number.isInteger(item?.tmdbId) &&
-            item.tmdbId > 0
-        )
-        .map(
-          (item) => ({
-            name: item.name,
-            category: "Production",
-            url:
-              `https://www.themoviedb.org/company/${item.tmdbId}`
-          })
-        )
-      )
+      ...productionCompanies
+        .filter((item) => Number.isInteger(item?.tmdbId))
+        .map((item) => ({
+          name: item.name,
+          category: "Production",
+          url: `https://www.themoviedb.org/company/${item.tmdbId}`,
+        })),
 
     ].filter(
       (link, index, array) =>
@@ -894,11 +857,11 @@ export async function mergeExternalMetadata(meta, imdbId) {
             x?.url === link?.url &&
             x?.name === link?.name
         )
-    )
+    ),
   };
 
   console.log(
-    "[externalMetadata] Generos:",
+    "[externalMetadata] Géneros:",
     genres.length
   );
 
@@ -909,22 +872,18 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
   console.log(
     "[externalMetadata] Productoras:",
-    productionCompanies.map(
-      (company) => ({
-        name: company.name,
-        tmdbId: company.tmdbId
-      })
-    )
+    productionCompanies.map((company) => ({
+      name: company.name,
+      tmdbId: company.tmdbId,
+    }))
   );
 
   console.log(
     "[externalMetadata] Networks:",
-    networks.map(
-      (item) => ({
-        name: item.name,
-        tmdbId: item.tmdbId
-      })
-    )
+    networks.map((item) => ({
+      name: item.name,
+      tmdbId: item.tmdbId,
+    }))
   );
 
   console.log(
