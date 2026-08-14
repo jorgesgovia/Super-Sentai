@@ -676,6 +676,22 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
 
   const merged = {
+    /*
+     * ========================================================
+     * ENTIDADES TMDB NATIVAS PARA NUVIO
+     * ========================================================
+     *
+     * Network:
+     *   tv asahi = TMDB 103
+     *
+     * Production:
+     *   Toei Company = TMDB 5822
+     *
+     * NO usar links artificiales.
+     * NO convertir estas entidades en strings.
+     * ========================================================
+     */
+
     networks: [
       {
         name: "tv asahi",
@@ -693,6 +709,25 @@ export async function mergeExternalMetadata(meta, imdbId) {
     ],
 
     production_companies: [
+      {
+        name: "Toei Company",
+        logo: "https://image.tmdb.org/t/p/w185/qyTbRgCyU9NLKvKaiQVbadtr7RY.png",
+        tmdbId: 5822,
+      },
+    ],
+
+      {
+        name: "tv asahi",
+        logo: "https://image.tmdb.org/t/p/w185/j3xAzk1SYQQwrQOD7acdSz675Wa.png",
+        tmdbId: 103,
+      },
+    ],
+      {
+        name: "Toei Company",
+        logo: "https://image.tmdb.org/t/p/w185/qyTbRgCyU9NLKvKaiQVbadtr7RY.png",
+        tmdbId: 5822,
+      },
+    ],
       {
         name: "Toei Company",
         logo: "https://image.tmdb.org/t/p/w185/qyTbRgCyU9NLKvKaiQVbadtr7RY.png",
