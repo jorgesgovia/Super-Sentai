@@ -279,7 +279,7 @@ app.get("/meta/:type/:id.json", async (req, res) => {
 
         return {
           id:
-            `70787:1:${episodeNumber}`,
+            `super-sentai-flashman:1:${episodeNumber}`,
 
           title:
             episode.title ||
@@ -501,7 +501,7 @@ app.get("/stream/:type/:id.json", async (req, res) => {
 
     if (
       !id.startsWith(
-        "70787:"
+        "super-sentai-flashman:"
       )
     ) {
 
