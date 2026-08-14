@@ -643,7 +643,70 @@ export async function mergeExternalMetadata(meta, imdbId) {
    * ============================================================
    */
 
+  /*
+   * ============================================================
+   * ENTIDADES NUVIO / TMDB
+   * ============================================================
+   *
+   * Flashman:
+   * tv asahi    -> TMDB network 103
+   * Toei Company -> TMDB company 5822
+   *
+   * IMPORTANTE:
+   * No modificamos el ID de la serie ni los IDs de episodios.
+   * ============================================================
+   */
+
+  const navigableNetworks = [
+    {
+      name: "tv asahi",
+      logo: "https://image.tmdb.org/t/p/w185/j3xAzk1SYQQwrQOD7acdSz675Wa.png",
+      tmdbId: 103,
+    },
+  ];
+
+  const navigableProductionCompanies = [
+    {
+      name: "Toei Company",
+      logo: "https://image.tmdb.org/t/p/w185/qyTbRgCyU9NLKvKaiQVbadtr7RY.png",
+      tmdbId: 5822,
+    },
+  ];
+
+
+
   const merged = {
+    networks: [
+      {
+        name: "tv asahi",
+        logo: "https://image.tmdb.org/t/p/w185/j3xAzk1SYQQwrQOD7acdSz675Wa.png",
+        tmdbId: 103,
+      },
+    ],
+
+    productionCompanies: [
+      {
+        name: "Toei Company",
+        logo: "https://image.tmdb.org/t/p/w185/qyTbRgCyU9NLKvKaiQVbadtr7RY.png",
+        tmdbId: 5822,
+      },
+    ],
+
+    production_companies: [
+      {
+        name: "Toei Company",
+        logo: "https://image.tmdb.org/t/p/w185/qyTbRgCyU9NLKvKaiQVbadtr7RY.png",
+        tmdbId: 5822,
+      },
+    ],
+
+
+    /*
+     * Entidades TMDB navegables para Nuvio.
+     * IDs oficiales de TMDB.
+     */
+
+
     ...meta,
 
     /*
@@ -799,8 +862,6 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
     productionCompanies,
 
-    production_companies:
-      productionCompanies,
 
     /*
      * ========================================================
