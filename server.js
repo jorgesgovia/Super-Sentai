@@ -406,37 +406,45 @@ app.get("/meta/:type/:id.json", async (req, res) => {
      */
 
     const finalMeta = {
+      /*
+       * Metadata base del addon.
+       */
+      ...metadata,
+
+      /*
+       * Metadata enriquecida por TMDB/Cinemeta.
+       *
+       * Aquí se incorporan explícitamente:
+       * - networks
+       * - productionCompanies
+       * - production_companies
+       * - cast
+       * - genres
+       * - rating
+       * - links
+       * etc.
+       */
       ...enrichedMetadata,
 
       /*
-       * El ID que Nuvio pidió debe coincidir con el ID público.
+       * El ID público de la serie permanece fijo.
        */
       id: "70787",
 
       /*
-       * Nuestros episodios conservan IDs internos para Drive.
+       * Los episodios continúan utilizando nuestros IDs internos.
        */
       videos,
 
       /*
-       * ========================================================
-       * MEDIA PERSONALIZADO DEL ADDON
-       * ========================================================
-       *
-       * Estos dos campos son deliberadamente los ÚLTIMOS.
-       *
-       * No permitimos que ninguna metadata externa sustituya:
-       *
-       * - nuestro background
-       * - nuestro trailer de YouTube
-       *
-       * metadata.js sigue siendo la fuente manual de estos datos.
-       * ========================================================
+       * Nuestro background personalizado siempre tiene prioridad.
        */
-
       background:
         metadata.background,
 
+      /*
+       * Nuestros trailers personalizados siempre tienen prioridad.
+       */
       trailerYtIds:
         Array.isArray(metadata.trailerYtIds)
           ? metadata.trailerYtIds

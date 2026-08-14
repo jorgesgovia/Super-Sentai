@@ -622,6 +622,66 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
   /*
    * ============================================================
+   * ENTIDADES TMDB NAVEGABLES
+   * ============================================================
+   *
+   * Nuvio utiliza MetaCompany para construir la navegación
+   * de redes y productoras.
+   *
+   * Conservamos únicamente entidades que tengan:
+   *
+   * - name
+   * - tmdbId
+   *
+   * El ID debe ser numérico porque MetaCompany.tmdbId es Int?.
+   * ============================================================
+   */
+
+  const navigableNetworks = networks
+    .filter(
+      (item) =>
+        item &&
+        item.name &&
+        Number.isInteger(item.tmdbId) &&
+        item.tmdbId > 0
+    )
+    .map((item) => ({
+      name: String(item.name),
+      logo: item.logo || undefined,
+      tmdbId: Number(item.tmdbId),
+    }))
+    .filter(
+      (item, index, array) =>
+        index ===
+        array.findIndex(
+          (x) => x.tmdbId === item.tmdbId
+        )
+    );
+
+  const navigableProductionCompanies =
+    productionCompanies
+      .filter(
+        (item) =>
+          item &&
+          item.name &&
+          Number.isInteger(item.tmdbId) &&
+          item.tmdbId > 0
+      )
+      .map((item) => ({
+        name: String(item.name),
+        logo: item.logo || undefined,
+        tmdbId: Number(item.tmdbId),
+      }))
+      .filter(
+        (item, index, array) =>
+          index ===
+          array.findIndex(
+            (x) => x.tmdbId === item.tmdbId
+          )
+      );
+
+  /*
+   * ============================================================
    * METADATA FINAL
    * ============================================================
    */
@@ -742,14 +802,23 @@ export async function mergeExternalMetadata(meta, imdbId) {
      */
     network,
 
-    networks,
+    /*
+     * Campos nativos de Nuvio.
+     *
+     * Se entregan como MetaCompany:
+     * { name, logo, tmdbId }
+     */
+    networks: navigableNetworks,
+
+    productionCompanies:
+      navigableProductionCompanies,
 
     /*
-     * Productoras como objetos navegables para Nuvio.
+     * Compatibilidad con clientes que utilizan el
+     * campo singular/legacy.
      */
-    productionCompanies,
-
-    production_companies: productionCompanies,
+    production_companies:
+      navigableProductionCompanies,
 
     cast,
 
@@ -785,21 +854,19 @@ export async function mergeExternalMetadata(meta, imdbId) {
        * con tmdbId para su propia navegación de entidades.
        */
 
-      ...networks
-        .filter((item) => item?.tmdbId)
-        .map((item) => ({
-          name: item.name,
-          category: "Network",
-          url: `https://www.themoviedb.org/network/${item.tmdbId}`,
-        })),
+      ...navigableNetworks.map((item) => ({
+        name: item.name,
+        category: "Network",
+        url:
+          `https://www.themoviedb.org/network/${item.tmdbId}`,
+      })),
 
-      ...productionCompanies
-        .filter((item) => item?.tmdbId)
-        .map((item) => ({
-          name: item.name,
-          category: "Production",
-          url: `https://www.themoviedb.org/company/${item.tmdbId}`,
-        })),
+      ...navigableProductionCompanies.map((item) => ({
+        name: item.name,
+        category: "Production",
+        url:
+          `https://www.themoviedb.org/company/${item.tmdbId}`,
+      })),
     ].filter(
       (link, index, array) =>
         index ===
@@ -822,16 +889,16 @@ export async function mergeExternalMetadata(meta, imdbId) {
   );
 
   console.log(
-    "[externalMetadata] Productoras:",
-    productionCompanies.map((company) => ({
+    "[externalMetadata] Productoras navegables:",
+    navigableProductionCompanies.map((company) => ({
       name: company.name,
       tmdbId: company.tmdbId,
     }))
   );
 
   console.log(
-    "[externalMetadata] Networks:",
-    networks.map((item) => ({
+    "[externalMetadata] Networks navegables:",
+    navigableNetworks.map((item) => ({
       name: item.name,
       tmdbId: item.tmdbId,
     }))
