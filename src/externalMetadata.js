@@ -643,6 +643,48 @@ export async function mergeExternalMetadata(meta, imdbId) {
    * ============================================================
    */
 
+
+  /*
+   * ============================================================
+   * ENTIDADES NUVIO — NETWORK / PRODUCCIÓN
+   * ============================================================
+   *
+   * Nuvio utiliza las entidades enriquecidas por TMDB.
+   * Conservamos name/logo y añadimos el identificador TMDB.
+   *
+   * No modificamos Meta.id ni Video.id.
+   * No modificamos episodios ni streams.
+   * ============================================================
+   */
+
+  const navigableNetworks = networks
+    .filter((item) =>
+      item &&
+      item.name &&
+      Number.isInteger(Number(item.tmdbId)) &&
+      Number(item.tmdbId) > 0
+    )
+    .map((item) => ({
+      name: String(item.name),
+      logo: item.logo || undefined,
+      tmdbId: Number(item.tmdbId),
+      id: `tmdb:network:${Number(item.tmdbId)}`,
+    }));
+
+  const navigableProductionCompanies = productionCompanies
+    .filter((item) =>
+      item &&
+      item.name &&
+      Number.isInteger(Number(item.tmdbId)) &&
+      Number(item.tmdbId) > 0
+    )
+    .map((item) => ({
+      name: String(item.name),
+      logo: item.logo || undefined,
+      tmdbId: Number(item.tmdbId),
+      id: `tmdb:company:${Number(item.tmdbId)}`,
+    }));
+
   const merged = {
     ...meta,
 
@@ -781,6 +823,8 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
     network,
 
+    networks: navigableNetworks,
+
     /*
      * ========================================================
      * NETWORKS
@@ -807,6 +851,10 @@ export async function mergeExternalMetadata(meta, imdbId) {
      * REPARTO
      * ========================================================
      */
+
+    productionCompanies: navigableProductionCompanies,
+
+    production_companies: navigableProductionCompanies,
 
     cast,
     actors: cast,
