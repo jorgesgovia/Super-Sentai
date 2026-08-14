@@ -667,6 +667,133 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
   /*
    * ============================================================
+   * NAVIGATION / EXTERNAL METADATA
+   * ============================================================
+   *
+   * Construimos explícitamente estos campos a partir de TMDB,
+   * Cinemeta y metadata local.
+   */
+
+  const tmdbNetworks = Array.isArray(tmdb?.networks)
+    ? tmdb.networks
+        .map((x) => x?.name)
+        .filter(Boolean)
+    : [];
+
+  const cmNetworks = [
+    ...(Array.isArray(cm.networks) ? cm.networks : []),
+    cm.network
+  ]
+    .map((x) =>
+      typeof x === "string"
+        ? x
+        : x?.name
+    )
+    .filter(Boolean);
+
+  const networks = [
+    ...new Set([
+      ...(Array.isArray(meta?.networks) ? meta.networks : []),
+      meta?.network,
+      ...tmdbNetworks,
+      ...cmNetworks
+    ].filter(Boolean))
+  ];
+
+  const network = first(
+    meta?.network,
+    cm.network,
+    networks[0]
+  );
+
+  const tmdbCreators = Array.isArray(tmdb?.created_by)
+    ? tmdb.created_by.map((person) => ({
+        name: person?.name,
+        id: person?.id,
+        photo: person?.profile_path
+          ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
+          : undefined
+      }))
+    : [];
+
+  const creatorPeople = uniquePeople([
+    ...tmdbCreators,
+    ...(Array.isArray(meta?.creators) ? meta.creators : []),
+    ...(Array.isArray(cm.creators) ? cm.creators : [])
+  ]);
+
+  const creator = first(
+    meta?.creator,
+    cm.creator,
+    creators[0]
+  );
+
+  const navigationLinks = [];
+
+  const externalIds = tmdb?.external_ids || {};
+
+  if (externalIds.imdb_id) {
+    navigationLinks.push({
+      name: "IMDb",
+      category: "imdb",
+      url: `https://www.imdb.com/title/${externalIds.imdb_id}`
+    });
+  }
+
+  if (tmdb?.id) {
+    navigationLinks.push({
+      name: "TMDB",
+      category: "tmdb",
+      url: `https://www.themoviedb.org/tv/${tmdb.id}`
+    });
+  }
+
+  if (externalIds.tvdb_id) {
+    navigationLinks.push({
+      name: "TheTVDB",
+      category: "tvdb",
+      url: `https://thetvdb.com/series/${externalIds.tvdb_id}`
+    });
+  }
+
+  if (tmdb?.homepage) {
+    navigationLinks.push({
+      name: "Official website",
+      category: "official",
+      url: tmdb.homepage
+    });
+  }
+
+  const links = [
+    ...(Array.isArray(meta?.links) ? meta.links : []),
+    ...(Array.isArray(cm.links) ? cm.links : []),
+    ...navigationLinks
+  ].filter(
+    (link, index, array) =>
+      link?.url &&
+      index ===
+        array.findIndex(
+          (x) => x?.url === link?.url
+        )
+  );
+
+  console.log(
+    "[externalMetadata] Networks:",
+    networks
+  );
+
+  console.log(
+    "[externalMetadata] Creators:",
+    creators
+  );
+
+  console.log(
+    "[externalMetadata] Navigation links:",
+    links
+  );
+
+  /*
+   * ============================================================
    * METADATA FINAL
    * ============================================================
    */
