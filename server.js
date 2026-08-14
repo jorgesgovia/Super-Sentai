@@ -427,6 +427,81 @@ app.get("/meta/:type/:id.json", async (req, res) => {
       ...enrichedMetadata,
 
       /*
+       * ========================================================
+       * ENTIDADES NAVEGABLES FORZADAS PARA NUVIO
+       * ========================================================
+       *
+       * Nuvio utiliza MetaCompany:
+       *
+       * {
+       *   name: String,
+       *   logo: String?,
+       *   tmdbId: Int?
+       * }
+       *
+       * No dependemos únicamente del merge externo.
+       * Estas entidades se escriben DIRECTAMENTE en la
+       * respuesta final que recibe Nuvio.
+       * ========================================================
+       */
+
+      networks: [
+        {
+          name: "tv asahi",
+          logo:
+            "https://image.tmdb.org/t/p/w185/j3xAzk1SYQQwrQOD7acdSz675Wa.png",
+          tmdbId: 103
+        }
+      ],
+
+      productionCompanies: [
+        {
+          name: "Toei Company",
+          logo:
+            "https://image.tmdb.org/t/p/w185/qyTbRgCyU9NLKvKaiQVbadtr7RY.png",
+          tmdbId: 5822
+        }
+      ],
+
+      production_companies: [
+        {
+          name: "Toei Company",
+          logo:
+            "https://image.tmdb.org/t/p/w185/qyTbRgCyU9NLKvKaiQVbadtr7RY.png",
+          tmdbId: 5822
+        }
+      ],
+
+      /*
+       * También conservamos links navegables como respaldo.
+       */
+      links: [
+        ...(Array.isArray(enrichedMetadata.links)
+          ? enrichedMetadata.links
+          : []
+        ),
+        {
+          name: "tv asahi",
+          category: "Network",
+          url: "https://www.themoviedb.org/network/103"
+        },
+        {
+          name: "Toei Company",
+          category: "Production",
+          url: "https://www.themoviedb.org/company/5822"
+        }
+      ].filter(
+        (link, index, array) =>
+          index ===
+          array.findIndex(
+            (x) =>
+              x?.name === link?.name &&
+              x?.category === link?.category &&
+              x?.url === link?.url
+          )
+      ),
+
+      /*
        * El ID público de la serie permanece fijo.
        */
       id: "70787",
