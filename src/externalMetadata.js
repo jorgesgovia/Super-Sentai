@@ -674,9 +674,6 @@ export async function mergeExternalMetadata(meta, imdbId) {
    * Cinemeta y metadata local.
    */
 
-  const tmdbNetworks = Array.isArray(tmdb?.networks)
-    ? tmdb.networks
-        .map((x) => x?.name)
         .filter(Boolean)
     : [];
 
