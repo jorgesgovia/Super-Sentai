@@ -293,33 +293,104 @@ export async function mergeExternalMetadata(meta, imdbId) {
    * ============================================================
    * PRODUCTORAS
    * ============================================================
+   *
+   * Nuvio necesita objetos MetaCompany para que la información
+   * de producción pueda utilizarse de forma navegable.
+   *
+   * Estructura:
+   *
+   * {
+   *   name,
+   *   logo,
+   *   tmdbId
+   * }
+   *
+   * TMDB es la fuente principal porque entrega tanto el nombre
+   * como el ID y el logo de cada productora.
+   * ============================================================
    */
 
   const tmdbProductionCompanies =
-    tmdb?.production_companies?.map(
-      (company) => company.name
-    ) || [];
+    Array.isArray(tmdb?.production_companies)
+      ? tmdb.production_companies
+          .filter((company) => company?.name)
+          .map((company) => ({
+            name: company.name,
+            logo: company.logo_path
+              ? `https://image.tmdb.org/t/p/w185${company.logo_path}`
+              : undefined,
+            tmdbId:
+              typeof company.id === "number"
+                ? company.id
+                : undefined,
+          }))
+      : [];
 
   const cinemetaProductionCompanies =
     Array.isArray(cm.productionCompanies)
-      ? cm.productionCompanies.map((company) =>
-          typeof company === "string"
-            ? company
-            : company?.name
-        )
+      ? cm.productionCompanies
+          .map((company) => {
+            if (typeof company === "string") {
+              return {
+                name: company,
+              };
+            }
+
+            return {
+              name: company?.name,
+              logo:
+                company?.logo ||
+                company?.logo_path ||
+                undefined,
+              tmdbId:
+                typeof company?.tmdbId === "number"
+                  ? company.tmdbId
+                  : undefined,
+            };
+          })
+          .filter((company) => company?.name)
+      : [];
+
+  const addonProductionCompanies =
+    Array.isArray(meta?.productionCompanies)
+      ? meta.productionCompanies
+          .map((company) => {
+            if (typeof company === "string") {
+              return {
+                name: company,
+              };
+            }
+
+            return {
+              name: company?.name,
+              logo:
+                company?.logo ||
+                company?.logo_path ||
+                undefined,
+              tmdbId:
+                typeof company?.tmdbId === "number"
+                  ? company.tmdbId
+                  : undefined,
+            };
+          })
+          .filter((company) => company?.name)
       : [];
 
   const productionCompanies = [
-    ...new Set(
-      [
-        ...tmdbProductionCompanies,
-        ...cinemetaProductionCompanies,
-        ...(Array.isArray(meta?.productionCompanies)
-          ? meta.productionCompanies
-          : []),
-      ].filter(Boolean)
-    ),
-  ];
+    ...tmdbProductionCompanies,
+    ...cinemetaProductionCompanies,
+    ...addonProductionCompanies,
+  ]
+    .filter((company) => company?.name)
+    .filter(
+      (company, index, array) =>
+        index ===
+        array.findIndex(
+          (x) =>
+            x?.name?.toLowerCase() ===
+            company?.name?.toLowerCase()
+        )
+    );
 
   /*
    * ============================================================
@@ -447,13 +518,107 @@ export async function mergeExternalMetadata(meta, imdbId) {
    * ============================================================
    * RED / CANAL
    * ============================================================
+   *
+   * Igual que las productoras, Nuvio necesita objetos con:
+   *
+   * {
+   *   name,
+   *   logo,
+   *   tmdbId
+   * }
+   *
+   * El tmdbId permite que Nuvio identifique la entidad TMDB
+   * correspondiente a la cadena/red.
+   * ============================================================
    */
 
-  const network = first(
-    meta?.network,
-    cm.network,
-    tmdb?.networks?.[0]?.name
-  );
+  const tmdbNetworks =
+    Array.isArray(tmdb?.networks)
+      ? tmdb.networks
+          .filter((network) => network?.name)
+          .map((network) => ({
+            name: network.name,
+            logo: network.logo_path
+              ? `https://image.tmdb.org/t/p/w185${network.logo_path}`
+              : undefined,
+            tmdbId:
+              typeof network.id === "number"
+                ? network.id
+                : undefined,
+          }))
+      : [];
+
+  const cinemetaNetworks = [
+    ...(Array.isArray(cm.networks) ? cm.networks : []),
+    ...(cm.network ? [cm.network] : []),
+  ]
+    .map((network) => {
+      if (typeof network === "string") {
+        return {
+          name: network,
+        };
+      }
+
+      return {
+        name: network?.name,
+        logo:
+          network?.logo ||
+          network?.logo_path ||
+          undefined,
+        tmdbId:
+          typeof network?.tmdbId === "number"
+            ? network.tmdbId
+            : undefined,
+      };
+    })
+    .filter((network) => network?.name);
+
+  const addonNetworks = [
+    ...(Array.isArray(meta?.networks) ? meta.networks : []),
+    ...(meta?.network ? [meta.network] : []),
+  ]
+    .map((network) => {
+      if (typeof network === "string") {
+        return {
+          name: network,
+        };
+      }
+
+      return {
+        name: network?.name,
+        logo:
+          network?.logo ||
+          network?.logo_path ||
+          undefined,
+        tmdbId:
+          typeof network?.tmdbId === "number"
+            ? network.tmdbId
+            : undefined,
+      };
+    })
+    .filter((network) => network?.name);
+
+  const networks = [
+    ...tmdbNetworks,
+    ...cinemetaNetworks,
+    ...addonNetworks,
+  ]
+    .filter((network) => network?.name)
+    .filter(
+      (network, index, array) =>
+        index ===
+        array.findIndex(
+          (x) =>
+            x?.name?.toLowerCase() ===
+            network?.name?.toLowerCase()
+        )
+    );
+
+  /*
+   * Campo legacy/simple para compatibilidad con clientes que
+   * esperan únicamente el nombre de la primera red.
+   */
+  const network = networks[0]?.name;
 
   /*
    * ============================================================
@@ -572,8 +737,16 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
     imdbVotes,
 
+    /*
+     * Red/canal como objeto navegable para Nuvio.
+     */
     network,
 
+    networks,
+
+    /*
+     * Productoras como objetos navegables para Nuvio.
+     */
     productionCompanies,
 
     production_companies: productionCompanies,
@@ -603,6 +776,30 @@ export async function mergeExternalMetadata(meta, imdbId) {
     links: [
       ...(Array.isArray(meta?.links) ? meta.links : []),
       ...(Array.isArray(cm.links) ? cm.links : []),
+
+      /*
+       * Navegación directa hacia las entidades TMDB.
+       *
+       * Estos enlaces son complementarios:
+       * Nuvio recibe además networks/productionCompanies
+       * con tmdbId para su propia navegación de entidades.
+       */
+
+      ...networks
+        .filter((item) => item?.tmdbId)
+        .map((item) => ({
+          name: item.name,
+          category: "Network",
+          url: `https://www.themoviedb.org/network/${item.tmdbId}`,
+        })),
+
+      ...productionCompanies
+        .filter((item) => item?.tmdbId)
+        .map((item) => ({
+          name: item.name,
+          category: "Production",
+          url: `https://www.themoviedb.org/company/${item.tmdbId}`,
+        })),
     ].filter(
       (link, index, array) =>
         index ===
@@ -626,7 +823,18 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
   console.log(
     "[externalMetadata] Productoras:",
-    productionCompanies.length
+    productionCompanies.map((company) => ({
+      name: company.name,
+      tmdbId: company.tmdbId,
+    }))
+  );
+
+  console.log(
+    "[externalMetadata] Networks:",
+    networks.map((item) => ({
+      name: item.name,
+      tmdbId: item.tmdbId,
+    }))
   );
 
   console.log(

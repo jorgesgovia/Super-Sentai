@@ -205,6 +205,49 @@ app.get("/meta/:type/:id.json", async (req, res) => {
 
     const metadata = await getMetadata();
 
+    /*
+     * ========================================================
+     * EXTERNAL METADATA / TMDB / CINEMETA
+     * ========================================================
+     *
+     * Enriquecemos la metadata ANTES de construir finalMeta.
+     *
+     * Esto permite que Nuvio reciba:
+     * - networks
+     * - productionCompanies
+     * - tmdbId
+     * - logos
+     * - créditos
+     * - ratings
+     * - IDs externos
+     *
+     * La reproducción de nuestros episodios no cambia.
+     */
+
+    let enrichedMetadata = metadata;
+
+    try {
+      enrichedMetadata = await mergeExternalMetadata(
+        metadata,
+        metadata.imdb_id
+      );
+
+      console.log(
+        "METADATA EXTERNA INTEGRADA:",
+        JSON.stringify({
+          networks:
+            enrichedMetadata.networks || [],
+          productionCompanies:
+            enrichedMetadata.productionCompanies || []
+        })
+      );
+    } catch (error) {
+      console.error(
+        "ERROR METADATA EXTERNA:",
+        error.message
+      );
+    }
+
 
     /*
      * ========================================================
@@ -363,7 +406,7 @@ app.get("/meta/:type/:id.json", async (req, res) => {
      */
 
     const finalMeta = {
-      ...metadata,
+      ...enrichedMetadata,
 
       /*
        * El ID que Nuvio pidió debe coincidir con el ID público.
