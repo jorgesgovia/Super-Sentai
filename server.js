@@ -63,13 +63,13 @@ app.get("/manifest.json", (req, res) => {
       {
         name: "meta",
         types: ["series"],
-        idPrefixes: ["super-sentai-"]
+        idPrefixes: ["70787"]
       },
 
       {
         name: "stream",
         types: ["series"],
-        idPrefixes: ["super-sentai-"]
+        idPrefixes: ["70787"]
       }
     ],
 
@@ -215,8 +215,8 @@ app.get("/meta/:type/:id.json", async (req, res) => {
      *
      * El ID de cada video es:
      *
-     * super-sentai-flashman:1:1
-     * super-sentai-flashman:1:2
+     * 70787:1:1
+     * 70787:1:2
      * ...
      *
      * Ese mismo ID será utilizado posteriormente
@@ -243,8 +243,8 @@ app.get("/meta/:type/:id.json", async (req, res) => {
      *
      * Cada episodio recibe nuestro ID interno:
      *
-     * super-sentai-flashman:1:1
-     * super-sentai-flashman:1:2
+     * 70787:1:1
+     * 70787:1:2
      * ...
      *
      * De esta manera Nuvio puede mostrar la información de
@@ -453,9 +453,9 @@ app.get("/meta/:type/:id.json", async (req, res) => {
  *
  * Nuvio/Stremio debe solicitar:
  *
- * /stream/series/super-sentai-flashman:1:1.json
+ * /stream/series/70787:1:1.json
  *
- * /stream/series/super-sentai-flashman:1:2.json
+ * /stream/series/70787:1:2.json
  *
  * etc.
  *
