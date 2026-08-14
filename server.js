@@ -407,44 +407,41 @@ app.get("/meta/:type/:id.json", async (req, res) => {
 
     const finalMeta = {
       /*
-       * Metadata base del addon.
+       * ========================================================
+       * IDENTIDAD PUBLICA
+       * ========================================================
        */
-      ...metadata,
+      id: "70787",
+      type: "series",
 
       /*
-       * Metadata enriquecida por TMDB/Cinemeta.
-       *
-       * Aquí se incorporan explícitamente:
-       * - networks
-       * - productionCompanies
-       * - production_companies
-       * - cast
-       * - genres
-       * - rating
-       * - links
-       * etc.
+       * ========================================================
+       * METADATA EXTERNA
+       * ========================================================
        */
       ...enrichedMetadata,
 
       /*
        * ========================================================
-       * ENTIDADES NAVEGABLES FORZADAS PARA NUVIO
+       * TMDB REAL
        * ========================================================
        *
-       * Nuvio utiliza MetaCompany:
+       * Choushinsei Flashman
+       * TMDB TV ID: 70787
        *
-       * {
-       *   name: String,
-       *   logo: String?,
-       *   tmdbId: Int?
-       * }
-       *
-       * No dependemos únicamente del merge externo.
-       * Estas entidades se escriben DIRECTAMENTE en la
-       * respuesta final que recibe Nuvio.
-       * ========================================================
+       * Nuvio puede utilizar esta identidad para su
+       * navegación/enriquecimiento TMDB.
        */
+      tmdb_id: 70787,
+      tmdbId: 70787,
 
+      /*
+       * ========================================================
+       * NETWORK NAVEGABLE
+       * ========================================================
+       *
+       * tv asahi = TMDB Network 103
+       */
       networks: [
         {
           name: "tv asahi",
@@ -454,6 +451,13 @@ app.get("/meta/:type/:id.json", async (req, res) => {
         }
       ],
 
+      /*
+       * ========================================================
+       * PRODUCTORA NAVEGABLE
+       * ========================================================
+       *
+       * Toei Company = TMDB Company 5822
+       */
       productionCompanies: [
         {
           name: "Toei Company",
@@ -473,53 +477,45 @@ app.get("/meta/:type/:id.json", async (req, res) => {
       ],
 
       /*
-       * También conservamos links navegables como respaldo.
+       * ========================================================
+       * NAVEGACION EXPLICITA
+       * ========================================================
        */
       links: [
-        ...(Array.isArray(enrichedMetadata.links)
+        ...(Array.isArray(enrichedMetadata?.links)
           ? enrichedMetadata.links
-          : []
-        ),
+          : []),
+
         {
           name: "tv asahi",
           category: "Network",
           url: "https://www.themoviedb.org/network/103"
         },
+
         {
           name: "Toei Company",
           category: "Production",
           url: "https://www.themoviedb.org/company/5822"
         }
-      ].filter(
-        (link, index, array) =>
-          index ===
-          array.findIndex(
-            (x) =>
-              x?.name === link?.name &&
-              x?.category === link?.category &&
-              x?.url === link?.url
-          )
-      ),
+      ],
 
       /*
-       * El ID público de la serie permanece fijo.
-       */
-      id: "70787",
-
-      /*
-       * Los episodios continúan utilizando nuestros IDs internos.
+       * ========================================================
+       * VIDEOS DEL ADDON
+       * ========================================================
+       *
+       * NO CAMBIAR.
        */
       videos,
 
       /*
-       * Nuestro background personalizado siempre tiene prioridad.
+       * ========================================================
+       * MEDIA PERSONALIZADO
+       * ========================================================
        */
       background:
         metadata.background,
 
-      /*
-       * Nuestros trailers personalizados siempre tienen prioridad.
-       */
       trailerYtIds:
         Array.isArray(metadata.trailerYtIds)
           ? metadata.trailerYtIds

@@ -637,49 +637,6 @@ export async function mergeExternalMetadata(meta, imdbId) {
    * ============================================================
    */
 
-  const navigableNetworks = networks
-    .filter(
-      (item) =>
-        item &&
-        item.name &&
-        Number.isInteger(item.tmdbId) &&
-        item.tmdbId > 0
-    )
-    .map((item) => ({
-      name: String(item.name),
-      logo: item.logo || undefined,
-      tmdbId: Number(item.tmdbId),
-    }))
-    .filter(
-      (item, index, array) =>
-        index ===
-        array.findIndex(
-          (x) => x.tmdbId === item.tmdbId
-        )
-    );
-
-  const navigableProductionCompanies =
-    productionCompanies
-      .filter(
-        (item) =>
-          item &&
-          item.name &&
-          Number.isInteger(item.tmdbId) &&
-          item.tmdbId > 0
-      )
-      .map((item) => ({
-        name: String(item.name),
-        logo: item.logo || undefined,
-        tmdbId: Number(item.tmdbId),
-      }))
-      .filter(
-        (item, index, array) =>
-          index ===
-          array.findIndex(
-            (x) => x.tmdbId === item.tmdbId
-          )
-      );
-
   /*
    * ============================================================
    * METADATA FINAL
@@ -688,6 +645,12 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
   const merged = {
     ...meta,
+
+    /*
+     * ========================================================
+     * IDENTIDAD
+     * ========================================================
+     */
 
     imdb_id: first(
       meta?.imdb_id,
@@ -733,8 +696,11 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
     poster,
 
-    background: customBackground || background,
-    trailerYtIds: customTrailerYtIds,
+    background:
+      customBackground || background,
+
+    trailerYtIds:
+      customTrailerYtIds,
 
     logo,
 
@@ -776,9 +742,20 @@ export async function mergeExternalMetadata(meta, imdbId) {
       tmdb?.original_language
     ),
 
-    genres,
+    /*
+     * ========================================================
+     * GENEROS
+     * ========================================================
+     */
 
+    genres,
     genre: genres,
+
+    /*
+     * ========================================================
+     * RATINGS
+     * ========================================================
+     */
 
     rating: first(
       meta?.rating,
@@ -794,43 +771,57 @@ export async function mergeExternalMetadata(meta, imdbId) {
         : undefined,
 
     imdbRating,
-
     imdbVotes,
 
     /*
-     * Red/canal como objeto navegable para Nuvio.
+     * ========================================================
+     * NETWORK
+     * ========================================================
      */
+
     network,
 
     /*
-     * Campos nativos de Nuvio.
+     * ========================================================
+     * NETWORKS
+     * ========================================================
      *
-     * Se entregan como MetaCompany:
-     * { name, logo, tmdbId }
+     * Conservamos los objetos producidos anteriormente.
      */
-    networks: navigableNetworks,
 
-    productionCompanies:
-      navigableProductionCompanies,
+    networks,
 
     /*
-     * Compatibilidad con clientes que utilizan el
-     * campo singular/legacy.
+     * ========================================================
+     * PRODUCTORAS
+     * ========================================================
      */
+
+    productionCompanies,
+
     production_companies:
-      navigableProductionCompanies,
+      productionCompanies,
+
+    /*
+     * ========================================================
+     * REPARTO
+     * ========================================================
+     */
 
     cast,
-
     actors: cast,
 
     director: directors,
-
     directors,
 
     writer: writers,
-
     writers,
+
+    /*
+     * ========================================================
+     * TAGLINE
+     * ========================================================
+     */
 
     tagline: first(
       meta?.tagline,
@@ -839,34 +830,62 @@ export async function mergeExternalMetadata(meta, imdbId) {
     ),
 
     /*
-     * Conservamos cualquier enlace que Cinemeta ya
-     * entregue, incluyendo referencias externas.
+     * ========================================================
+     * LINKS
+     * ========================================================
      */
+
     links: [
-      ...(Array.isArray(meta?.links) ? meta.links : []),
-      ...(Array.isArray(cm.links) ? cm.links : []),
+      ...(Array.isArray(meta?.links)
+        ? meta.links
+        : []),
+
+      ...(Array.isArray(cm.links)
+        ? cm.links
+        : []),
 
       /*
-       * Navegación directa hacia las entidades TMDB.
-       *
-       * Estos enlaces son complementarios:
-       * Nuvio recibe además networks/productionCompanies
-       * con tmdbId para su propia navegación de entidades.
+       * TV ASAHI
        */
 
-      ...navigableNetworks.map((item) => ({
-        name: item.name,
-        category: "Network",
-        url:
-          `https://www.themoviedb.org/network/${item.tmdbId}`,
-      })),
+      ...(networks
+        .filter(
+          (item) =>
+            item?.name &&
+            Number.isInteger(item?.tmdbId) &&
+            item.tmdbId > 0
+        )
+        .map(
+          (item) => ({
+            name: item.name,
+            category: "Network",
+            url:
+              `https://www.themoviedb.org/network/${item.tmdbId}`
+          })
+        )
+      ),
 
-      ...navigableProductionCompanies.map((item) => ({
-        name: item.name,
-        category: "Production",
-        url:
-          `https://www.themoviedb.org/company/${item.tmdbId}`,
-      })),
+      /*
+       * TOEI / PRODUCTORAS
+       */
+
+      ...(productionCompanies
+        .filter(
+          (item) =>
+            item?.name &&
+            Number.isInteger(item?.tmdbId) &&
+            item.tmdbId > 0
+        )
+        .map(
+          (item) => ({
+            name: item.name,
+            category: "Production",
+            url:
+              `https://www.themoviedb.org/company/${item.tmdbId}`
+          })
+        )
+      )
+
     ].filter(
       (link, index, array) =>
         index ===
@@ -875,11 +894,11 @@ export async function mergeExternalMetadata(meta, imdbId) {
             x?.url === link?.url &&
             x?.name === link?.name
         )
-    ),
+    )
   };
 
   console.log(
-    "[externalMetadata] Géneros:",
+    "[externalMetadata] Generos:",
     genres.length
   );
 
@@ -889,19 +908,23 @@ export async function mergeExternalMetadata(meta, imdbId) {
   );
 
   console.log(
-    "[externalMetadata] Productoras navegables:",
-    navigableProductionCompanies.map((company) => ({
-      name: company.name,
-      tmdbId: company.tmdbId,
-    }))
+    "[externalMetadata] Productoras:",
+    productionCompanies.map(
+      (company) => ({
+        name: company.name,
+        tmdbId: company.tmdbId
+      })
+    )
   );
 
   console.log(
-    "[externalMetadata] Networks navegables:",
-    navigableNetworks.map((item) => ({
-      name: item.name,
-      tmdbId: item.tmdbId,
-    }))
+    "[externalMetadata] Networks:",
+    networks.map(
+      (item) => ({
+        name: item.name,
+        tmdbId: item.tmdbId
+      })
+    )
   );
 
   console.log(
