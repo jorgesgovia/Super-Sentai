@@ -63,13 +63,13 @@ app.get("/manifest.json", (req, res) => {
       {
         name: "meta",
         types: ["series"],
-        idPrefixes: ["70787"]
+        idPrefixes: ["super-sentai-"]
       },
 
       {
         name: "stream",
         types: ["series"],
-        idPrefixes: ["70787"]
+        idPrefixes: ["super-sentai-"]
       }
     ],
 
