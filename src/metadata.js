@@ -1,85 +1,45 @@
-const EPISODES = [
-  "El nacimiento de los Flashman",
-  "El contraataque de Mess",
-  "La amenaza del Imperio Mess",
-  "El guerrero de la Tierra",
-  "El secreto de los Flashman",
-  "El ataque de la criatura Mess",
-  "La batalla decisiva",
-  "El poder de Flash King",
-  "Una nueva amenaza",
-  "El enemigo desconocido",
-  "El desafío de Mess",
-  "La batalla en la ciudad",
-  "El plan del Imperio Mess",
-  "Los cinco guerreros",
-  "El poder de los Flashman",
-  "La trampa de Mess",
-  "El enemigo más poderoso",
-  "La misión de los Flashman",
-  "El ataque final",
-  "La batalla contra Mess",
-  "El misterio de Flashman",
-  "El nuevo enemigo",
-  "La fuerza de la amistad",
-  "La batalla del equipo",
-  "El secreto de la Tierra",
-  "El regreso del enemigo",
-  "La nueva misión",
-  "El ataque de Mess",
-  "El poder oculto",
-  "La batalla definitiva",
-  "Los guerreros unidos",
-  "La amenaza final",
-  "El contraataque",
-  "La decisión de los Flashman",
-  "El enemigo de otro planeta",
-  "La última batalla",
-  "El poder de Flash King",
-  "La esperanza de la Tierra",
-  "El desafío final",
-  "La batalla de los cinco",
-  "El Imperio Mess ataca",
-  "La última misión",
-  "El secreto de Flashman",
-  "La batalla final se acerca",
-  "El poder de los guerreros",
-  "El destino de los Flashman",
-  "El último enfrentamiento",
-  "La batalla contra Mess",
-  "El final de la batalla",
-  "El destino de los Flashman"
-];
+const TOTAL_EPISODES = 50;
+
+function episodeId(number) {
+  return `70787:1:${number}`;
+}
 
 function createEpisode(number) {
-  const title = EPISODES[number - 1] || `Episodio ${number}`;
-
   return {
-    id: `70787:1:${number}`,
-    title: title,
-    name: title,
+    id: episodeId(number),
+
+    title: `Episodio ${number}`,
+
+    name: `Episodio ${number}`,
 
     season: 1,
+
     episode: number,
 
     overview:
-      `Choushinsei Flashman — ${title}. Los Flashman continúan su lucha contra el Imperio Mess y enfrentan una nueva amenaza.`,
+      `Choushinsei Flashman - Episodio ${number}. Los Flashman continúan enfrentando al Imperio Mess y protegiendo la Tierra de sus amenazas.`,
 
-    released: `1986-03-${String(Math.min(number, 31)).padStart(2, "0")}`,
+    released: `1986-01-${String(Math.min(number, 28)).padStart(2, "0")}`,
 
-    thumbnail: "https://images.metahub.space/poster/tt0090407/medium.jpg"
+    thumbnail:
+      "https://images.metahub.space/poster/tt0090407/medium.jpg"
   };
 }
 
-export async function getMetadata() {
+function createVideos() {
   const videos = [];
 
-  for (let i = 1; i <= 50; i++) {
+  for (let i = 1; i <= TOTAL_EPISODES; i++) {
     videos.push(createEpisode(i));
   }
 
+  return videos;
+}
+
+export async function getMetadata() {
   return {
     id: "70787",
+
     type: "series",
 
     name: "Choushinsei Flashman",
@@ -87,7 +47,9 @@ export async function getMetadata() {
     imdb_id: "tt0090407",
 
     year: 1986,
+
     releaseInfo: "1986-1987",
+
     released: "1986-03-01",
 
     genres: [
@@ -97,12 +59,53 @@ export async function getMetadata() {
     ],
 
     network: "TV Asahi",
+
     productionCompany: "Toei Company",
 
     description:
       "Choushinsei Flashman es una serie japonesa de Super Sentai producida por Toei Company y transmitida por TV Asahi entre 1986 y 1987.",
 
-    videos: videos
+    videos: createVideos()
+  };
+}
+
+export async function getEpisodeMetadata(number) {
+  const episode = Number(number);
+
+  if (
+    !Number.isInteger(episode) ||
+    episode < 1 ||
+    episode > TOTAL_EPISODES
+  ) {
+    return null;
+  }
+
+  const video = createEpisode(episode);
+
+  return {
+    id: video.id,
+
+    type: "episode",
+
+    name: video.title,
+
+    title: video.title,
+
+    series: "Choushinsei Flashman",
+
+    seriesId: "70787",
+
+    imdb_id: "tt0090407",
+
+    season: 1,
+
+    episode,
+
+    overview: video.overview,
+
+    released: video.released,
+
+    thumbnail: video.thumbnail
   };
 }
 

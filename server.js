@@ -1,6 +1,10 @@
 import express from "express";
 import cors from "cors";
-import { getMetadata } from "./src/metadata.js";
+import {
+  getMetadata,
+  getEpisodeMetadata
+} from "./src/metadata.js";
+
 import { getStreams } from "./src/streams.js";
 
 const app = express();
@@ -13,6 +17,33 @@ const PORT = process.env.PORT || 7070;
 const ADDON_ID = "org.super-sentai.addon";
 const ADDON_NAME = "Super Sentai Addon";
 
+function jsonNoCache(res) {
+  res.setHeader(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, proxy-revalidate"
+  );
+
+  res.setHeader(
+    "Pragma",
+    "no-cache"
+  );
+
+  res.setHeader(
+    "Expires",
+    "0"
+  );
+}
+
+function parseEpisodeId(id) {
+  const match = String(id).match(/^70787:1:(\d+)$/);
+
+  if (!match) {
+    return null;
+  }
+
+  return Number(match[1]);
+}
+
 app.get("/", (req, res) => {
   res.json({
     addon: ADDON_NAME,
@@ -23,9 +54,13 @@ app.get("/", (req, res) => {
 app.get("/manifest.json", (req, res) => {
   res.json({
     id: ADDON_ID,
+
     version: "1.0.0",
+
     name: ADDON_NAME,
-    description: "Super Sentai Addon para Nuvio",
+
+    description:
+      "Super Sentai Addon para Nuvio",
 
     resources: [
       "catalog",
@@ -34,7 +69,8 @@ app.get("/manifest.json", (req, res) => {
     ],
 
     types: [
-      "series"
+      "series",
+      "episode"
     ],
 
     catalogs: [
@@ -47,215 +83,460 @@ app.get("/manifest.json", (req, res) => {
   });
 });
 
-app.get("/catalog/:type/:id.json", async (req, res) => {
-  try {
-    const metadata = await getMetadata();
+/*
+============================================================
+CATALOG
+============================================================
+*/
 
-    res.json({
-      metas: [
-        {
-          id: metadata.id,
-          type: "series",
-          name: metadata.name,
+app.get(
+  "/catalog/:type/:id.json",
+  async (req, res) => {
+    try {
+      const metadata = await getMetadata();
 
-          poster: metadata.poster,
-          background: metadata.background,
+      jsonNoCache(res);
 
-          description: metadata.description,
+      res.json({
+        metas: [
+          {
+            id: metadata.id,
 
-          genres: metadata.genres,
+            type: "series",
 
-          year: metadata.year,
-          releaseInfo: metadata.releaseInfo,
-          released: metadata.released,
+            name: metadata.name,
 
-          imdb_id: metadata.imdb_id,
+            poster: metadata.poster,
 
-          network: metadata.network,
-          productionCompany: metadata.productionCompany
-        }
-      ]
-    });
-  } catch (error) {
-    console.error("CATALOG ERROR:", error);
+            background: metadata.background,
 
-    res.status(500).json({
-      metas: []
-    });
+            description: metadata.description,
+
+            genres: metadata.genres,
+
+            year: metadata.year,
+
+            releaseInfo: metadata.releaseInfo,
+
+            released: metadata.released,
+
+            imdb_id: metadata.imdb_id,
+
+            network: metadata.network,
+
+            productionCompany:
+              metadata.productionCompany
+          }
+        ]
+      });
+
+    } catch (error) {
+
+      console.error(
+        "CATALOG ERROR:",
+        error
+      );
+
+      res.status(500).json({
+        metas: []
+      });
+    }
   }
-});
+);
 
-app.get("/meta/:type/:id.json", async (req, res) => {
-  try {
-    const metadata = await getMetadata();
+/*
+============================================================
+META — SERIE
+============================================================
+*/
 
-    console.log("");
-    console.log("======================================");
-    console.log(" META");
-    console.log("======================================");
-    console.log("Requested:", req.params.id);
-    console.log("Returning:", metadata.name);
-    console.log("Videos:", metadata.videos.length);
+app.get(
+  "/meta/series/:id.json",
+  async (req, res) => {
 
-    res.setHeader(
-      "Cache-Control",
-      "no-store, no-cache, must-revalidate, proxy-revalidate"
-    );
+    try {
 
-    res.setHeader(
-      "Pragma",
-      "no-cache"
-    );
+      const metadata =
+        await getMetadata();
 
-    res.setHeader(
-      "Expires",
-      "0"
-    );
+      jsonNoCache(res);
 
-    res.json({
-      meta: {
-        id: metadata.id,
-        type: "series",
-        name: metadata.name,
+      console.log("");
+      console.log(
+        "======================================"
+      );
+      console.log(
+        " META SERIES"
+      );
+      console.log(
+        "======================================"
+      );
 
-        imdb_id: metadata.imdb_id,
+      console.log(
+        "Requested:",
+        req.params.id
+      );
 
-        year: metadata.year,
-        releaseInfo: metadata.releaseInfo,
-        released: metadata.released,
+      console.log(
+        "Videos:",
+        metadata.videos.length
+      );
 
-        genres: metadata.genres,
+      res.json({
+        meta: metadata
+      });
 
-        description: metadata.description,
+    } catch (error) {
 
-        network: metadata.network,
-        productionCompany: metadata.productionCompany,
+      console.error(
+        "META SERIES ERROR:",
+        error
+      );
 
-        poster: metadata.poster,
-        background: metadata.background,
+      res.status(500).json({
+        meta: {}
+      });
+    }
+  }
+);
 
-        videos: metadata.videos
+/*
+============================================================
+META — EPISODIO INDIVIDUAL
+============================================================
+*/
+
+app.get(
+  "/meta/episode/:id.json",
+  async (req, res) => {
+
+    try {
+
+      const episode =
+        parseEpisodeId(req.params.id);
+
+      if (!episode) {
+
+        return res.status(404).json({
+          meta: {}
+        });
+
       }
-    });
 
-  } catch (error) {
+      const metadata =
+        await getEpisodeMetadata(
+          episode
+        );
 
-    console.error("META ERROR:", error);
+      jsonNoCache(res);
 
-    res.status(500).json({
-      meta: {}
-    });
+      console.log("");
+      console.log(
+        "======================================"
+      );
+
+      console.log(
+        " META EPISODE"
+      );
+
+      console.log(
+        "Episode:",
+        episode
+      );
+
+      console.log(
+        "ID:",
+        req.params.id
+      );
+
+      console.log(
+        "======================================"
+      );
+
+      res.json({
+        meta: metadata
+      });
+
+    } catch (error) {
+
+      console.error(
+        "META EPISODE ERROR:",
+        error
+      );
+
+      res.status(500).json({
+        meta: {}
+      });
+    }
   }
-});
+);
 
-app.get("/stream/:type/:id.json", async (req, res) => {
-  try {
+/*
+============================================================
+META — FALLBACK GENERAL
+============================================================
+*/
 
-    const requestedId = req.params.id;
+app.get(
+  "/meta/:type/:id.json",
+  async (req, res) => {
 
-    console.log("");
-    console.log("======================================");
-    console.log(" STREAM");
-    console.log("======================================");
-    console.log("Type:", req.params.type);
-    console.log("ID:", requestedId);
+    try {
 
-    if (requestedId === "70787") {
+      const metadata =
+        await getMetadata();
 
-      console.log("SERIES STREAM REQUEST");
+      jsonNoCache(res);
 
-      const allStreams = [];
+      res.json({
+        meta: metadata
+      });
 
-      for (let episode = 1; episode <= 50; episode++) {
+    } catch (error) {
 
-        const episodeId = `70787:1:${episode}`;
+      console.error(
+        "META ERROR:",
+        error
+      );
 
-        try {
+      res.status(500).json({
+        meta: {}
+      });
+    }
+  }
+);
 
-          const streams = await getStreams(episodeId);
+/*
+============================================================
+STREAM — EPISODIO
+============================================================
+*/
 
-          if (
-            Array.isArray(streams) &&
-            streams.length > 0
-          ) {
+app.get(
+  "/stream/:type/:id.json",
+  async (req, res) => {
 
-            for (const stream of streams) {
+    try {
 
-              allStreams.push({
-                ...stream,
+      const requestedId =
+        req.params.id;
 
-                title:
-                  stream.title ||
-                  `Episodio ${episode}`,
+      console.log("");
+      console.log(
+        "======================================"
+      );
 
-                name:
-                  stream.name ||
-                  `Episodio ${episode}`,
+      console.log(
+        " STREAM REQUEST"
+      );
 
-                season: 1,
+      console.log(
+        "Type:",
+        req.params.type
+      );
 
-                episode: episode,
+      console.log(
+        "ID:",
+        requestedId
+      );
 
-                episodeId: episodeId
-              });
+      console.log(
+        "======================================"
+      );
+
+      /*
+      --------------------------------------
+      EPISODIO INDIVIDUAL
+      --------------------------------------
+      */
+
+      if (
+        requestedId.startsWith(
+          "70787:1:"
+        )
+      ) {
+
+        const streams =
+          await getStreams(
+            requestedId
+          );
+
+        console.log(
+          "Episode streams:",
+          Array.isArray(streams)
+            ? streams.length
+            : 0
+        );
+
+        return res.json({
+          streams:
+            Array.isArray(streams)
+              ? streams
+              : []
+        });
+      }
+
+      /*
+      --------------------------------------
+      SERIE COMPLETA
+      --------------------------------------
+      */
+
+      if (
+        requestedId === "70787"
+      ) {
+
+        console.log(
+          "SERIES FALLBACK"
+        );
+
+        const allStreams = [];
+
+        for (
+          let episode = 1;
+          episode <= 50;
+          episode++
+        ) {
+
+          const id =
+            `70787:1:${episode}`;
+
+          try {
+
+            const streams =
+              await getStreams(id);
+
+            if (
+              Array.isArray(streams) &&
+              streams.length
+            ) {
+
+              for (
+                const stream of streams
+              ) {
+
+                allStreams.push({
+                  ...stream,
+
+                  title:
+                    stream.title ||
+                    `Episodio ${episode}`,
+
+                  name:
+                    stream.name ||
+                    `Episodio ${episode}`,
+
+                  season: 1,
+
+                  episode,
+
+                  episodeId: id
+                });
+
+              }
 
             }
 
+          } catch (error) {
+
+            console.error(
+              "Episode stream error:",
+              id,
+              error
+            );
           }
-
-        } catch (episodeError) {
-
-          console.error(
-            "Episode error:",
-            episodeId,
-            episodeError
-          );
-
         }
 
+        console.log(
+          "TOTAL STREAMS:",
+          allStreams.length
+        );
+
+        return res.json({
+          streams: allStreams
+        });
       }
 
-      console.log(
-        "TOTAL STREAMS:",
-        allStreams.length
+      /*
+      --------------------------------------
+      FALLBACK
+      --------------------------------------
+      */
+
+      const streams =
+        await getStreams(
+          requestedId
+        );
+
+      res.json({
+        streams:
+          Array.isArray(streams)
+            ? streams
+            : []
+      });
+
+    } catch (error) {
+
+      console.error(
+        "STREAM ERROR:",
+        error
       );
 
-      return res.json({
-        streams: allStreams
+      res.json({
+        streams: []
       });
     }
-
-    const streams = await getStreams(requestedId);
-
-    res.json({
-      streams: Array.isArray(streams)
-        ? streams
-        : []
-    });
-
-  } catch (error) {
-
-    console.error("STREAM ERROR:", error);
-
-    res.json({
-      streams: []
-    });
   }
-});
+);
 
-app.listen(PORT, "0.0.0.0", () => {
+app.listen(
+  PORT,
+  "0.0.0.0",
+  () => {
 
-  console.log("");
-  console.log("======================================");
-  console.log(" Super Sentai Addon");
-  console.log(" STATUS: ONLINE");
-  console.log(" SERIES: Choushinsei Flashman");
-  console.log(" ID: 70787");
-  console.log(" IMDb: tt0090407");
-  console.log(" EPISODES: 50");
-  console.log(" NETWORK: TV Asahi");
-  console.log(" PRODUCTION: Toei Company");
-  console.log(" STREAMS: Google Drive");
-  console.log("======================================");
+    console.log("");
+    console.log(
+      "======================================"
+    );
 
-});
+    console.log(
+      " Super Sentai Addon"
+    );
+
+    console.log(
+      " STATUS: ONLINE"
+    );
+
+    console.log(
+      " SERIES: Choushinsei Flashman"
+    );
+
+    console.log(
+      " SERIES ID: 70787"
+    );
+
+    console.log(
+      " IMDb: tt0090407"
+    );
+
+    console.log(
+      " EPISODES: 50"
+    );
+
+    console.log(
+      " NETWORK: TV Asahi"
+    );
+
+    console.log(
+      " PRODUCTION: Toei Company"
+    );
+
+    console.log(
+      " STREAMS: Google Drive"
+    );
+
+    console.log(
+      "======================================"
+    );
+  }
+);
