@@ -6,6 +6,11 @@ import {
 } from "./src/metadata.js";
 
 import {
+  getEpisodes,
+  getEpisode
+} from "./src/episodes.js";
+
+import {
   getStreams
 } from "./src/streams.js";
 
@@ -61,7 +66,10 @@ app.get(
         "70787",
 
       externalMetadata:
-        true
+        true,
+
+      episodes:
+        "separate"
 
     });
 
@@ -91,7 +99,7 @@ app.get(
         ADDON_NAME,
 
       description:
-        "Super Sentai stream provider using external metadata",
+        "Super Sentai Addon",
 
       resources: [
 
@@ -135,8 +143,7 @@ app.get(
 CATALOG
 ============================================================
 
-Mantenemos solamente los campos necesarios para que
-Nuvio siga detectando la serie.
+NO episodios aquí.
 
 ============================================================
 */
@@ -149,25 +156,6 @@ app.get(
 
       const metadata =
         await getMetadata();
-
-
-      console.log("");
-      console.log(
-        "======================================"
-      );
-
-      console.log(
-        " CATALOG"
-      );
-
-      console.log(
-        "======================================"
-      );
-
-      console.log(
-        "ID:",
-        metadata.id
-      );
 
 
       res.json({
@@ -217,18 +205,22 @@ app.get(
 META
 ============================================================
 
-Aquí probamos únicamente:
+Mantenemos exactamente la estructura que actualmente
+permite:
 
-IMDb rating
-Background
+✓ detectar serie
+✓ Red
+✓ Producción
+✓ background
+✓ IMDb rating
+
+Agregamos:
+
+✓ poster
+✓ logo
+✓ trailer
 
 NO videos[].
-
-NO episodios.
-
-NO network.
-
-NO productionCompany.
 
 ============================================================
 */
@@ -249,7 +241,7 @@ app.get(
       );
 
       console.log(
-        " META — RATING + BACKGROUND"
+        " META"
       );
 
       console.log(
@@ -262,28 +254,38 @@ app.get(
       );
 
       console.log(
-        "TMDB ID:",
+        "TMDB:",
         metadata.id
       );
 
       console.log(
-        "IMDb RATING:",
+        "IMDb rating:",
         metadata.imdbRating
       );
 
       console.log(
-        "BACKGROUND:",
+        "Background:",
         metadata.background
       );
 
       console.log(
-        "VIDEOS:",
-        "NONE"
+        "Poster:",
+        metadata.poster
       );
 
       console.log(
-        "EPISODES:",
-        "NONE"
+        "Logo:",
+        metadata.logo
+      );
+
+      console.log(
+        "Trailer:",
+        metadata.trailer
+      );
+
+      console.log(
+        "VIDEOS:",
+        "NO"
       );
 
 
@@ -304,7 +306,16 @@ app.get(
             metadata.imdbRating,
 
           background:
-            metadata.background
+            metadata.background,
+
+          poster:
+            metadata.poster,
+
+          logo:
+            metadata.logo,
+
+          trailer:
+            metadata.trailer
 
         }
 
@@ -333,20 +344,158 @@ app.get(
 
 /*
 ============================================================
+EPISODES — ENDPOINT SEPARADO
+============================================================
+
+IMPORTANTE:
+
+Este endpoint NO se declara como resource del manifest.
+
+Por lo tanto NO debería alterar la interfaz actual de Nuvio.
+
+Lo utilizamos para comprobar y depurar nuestra estructura
+episódica independientemente de metadata.
+
+============================================================
+*/
+
+app.get(
+  "/episodes/:type/:id.json",
+  async (req, res) => {
+
+    try {
+
+      const id =
+        req.params.id;
+
+
+      console.log("");
+      console.log(
+        "======================================"
+      );
+
+      console.log(
+        " EPISODES ENDPOINT"
+      );
+
+      console.log(
+        "======================================"
+      );
+
+      console.log(
+        "TYPE:",
+        req.params.type
+      );
+
+      console.log(
+        "ID:",
+        id
+      );
+
+
+      /*
+       * Serie completa
+       */
+
+      if (
+        id === "70787"
+      ) {
+
+        const episodes =
+          getEpisodes();
+
+
+        console.log(
+          "EPISODES:",
+          episodes.length
+        );
+
+
+        return res.json({
+
+          episodes
+
+        });
+
+      }
+
+
+      /*
+       * Episodio individual
+       *
+       * 70787:1:23
+       */
+
+      const match =
+        id.match(
+          /^70787:(\d+):(\d+)$/
+        );
+
+
+      if (match) {
+
+        const episode =
+          getEpisode(
+            Number(match[1]),
+            Number(match[2])
+          );
+
+
+        return res.json({
+
+          episodes:
+            episode
+              ? [episode]
+              : []
+
+        });
+
+      }
+
+
+      return res.json({
+
+        episodes: []
+
+      });
+
+
+    } catch (error) {
+
+      console.error(
+        "EPISODES ERROR:",
+        error
+      );
+
+
+      res.json({
+
+        episodes: []
+
+      });
+
+    }
+
+  }
+);
+
+
+/*
+============================================================
 STREAM
 ============================================================
 
-NO MODIFICAMOS LA LÓGICA DE DRIVE.
+NO MODIFICAMOS streams.js.
 
-TMDB:
+Aceptamos:
+
 70787:1:N
 
-IMDb:
+y:
+
 tt0090407:1:N
 
-Ambos terminan en:
-
-70787:1:N
+El segundo únicamente como compatibilidad.
 
 ============================================================
 */
@@ -435,8 +584,6 @@ app.get(
 
       /*
        * IMDb compatibility
-       *
-       * NO se utiliza para metadata.
        */
 
       const imdbMatch =
@@ -463,7 +610,7 @@ app.get(
 
 
         console.log(
-          "IMDb EPISODE COMPATIBILITY"
+          "IMDb COMPATIBILITY"
         );
 
         console.log(
@@ -544,7 +691,7 @@ app.listen(
     );
 
     console.log(
-      " EXPERIMENTO 16"
+      " EXPERIMENTO 17"
     );
 
     console.log(
@@ -568,19 +715,32 @@ app.listen(
     );
 
     console.log(
-      "VIDEOS: NONE"
+      "POSTER: ENABLED"
     );
 
     console.log(
-      "EPISODES: EXTERNAL"
+      "LOGO: ENABLED"
     );
 
     console.log(
-      "STREAM: GOOGLE DRIVE"
+      "TRAILER: ENABLED"
+    );
+
+    console.log(
+      "EPISODES: SEPARATE FILE"
+    );
+
+    console.log(
+      "EPISODES IN META: NO"
+    );
+
+    console.log(
+      "STREAMS: GOOGLE DRIVE"
     );
 
     console.log(
       "======================================"
+
     );
 
   }

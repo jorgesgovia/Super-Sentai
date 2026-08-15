@@ -1,153 +1,130 @@
-import { SERIES } from "./series.js";
-import { getTmdbSeries } from "./tmdb.js";
+/*
+============================================================
+SUPER SENTAI ADDON
+EPISODES.JS
 
-export async function getEpisodes(seriesId) {
-  const series = SERIES.find((item) => item.id === seriesId);
+ARCHIVO INDEPENDIENTE DE METADATA.
 
-  if (!series) {
-    throw new Error(`Serie no encontrada: ${seriesId}`);
-  }
+Aquí vive exclusivamente la información de episodios.
 
-  const tmdb = await getTmdbSeries(series.tmdbId);
+NO modifica metadata.js.
+NO modifica streams.js.
 
-  // Obtener reparto principal de la serie
-  const creditsUrl =
-    `https://api.themoviedb.org/3/tv/${series.tmdbId}/credits` +
-    `?api_key=${process.env.TMDB_API_KEY}` +
-    `&language=es-MX`;
+TMDB:
+70787
 
-  const creditsResponse = await fetch(creditsUrl, {
-  headers: {
-    Authorization: `Bearer ${process.env.TMDB_API_KEY}`,
-    accept: "application/json"
-  }
-});
+SERIE:
+Choushinsei Flashman
 
-  let cast = [];
+============================================================
+*/
 
-  if (creditsResponse.ok) {
-    const credits = await creditsResponse.json();
 
-    cast = (credits.cast || []).slice(0, 20).map((person) => ({
-      name: person.name,
-      character: person.character || "",
-      profile: person.profile_path
-        ? `https://image.tmdb.org/t/p/w300${person.profile_path}`
-        : null
-    }));
-  }
+const EPISODE_COUNT =
+  50;
+
+
+/*
+============================================================
+GENERADOR DE EPISODIOS
+============================================================
+
+De momento no inventamos títulos ni sinopsis.
+
+El objetivo de este archivo es separar completamente
+la estructura episódica de metadata.js.
+
+Los datos reales pueden incorporarse después mediante
+TMDB/Wikidata/u otra fuente.
+
+============================================================
+*/
+
+export function getEpisodes() {
 
   const episodes = [];
 
-  for (const season of tmdb.seasons || []) {
-    if (season.season_number === 0) {
-      continue;
-    }
 
-    const seasonUrl =
-      `https://api.themoviedb.org/3/tv/${series.tmdbId}/season/` +
-      `${season.season_number}` +
-      `?api_key=${process.env.TMDB_API_KEY}` +
-      `&language=es-MX`;
+  for (
+    let episode = 1;
+    episode <= EPISODE_COUNT;
+    episode++
+  ) {
 
-    const response = await fetch(seasonUrl, {
-    headers: {
-      Authorization: `Bearer ${process.env.TMDB_API_KEY}`,
-      accept: "application/json"
-    }
-  });
+    episodes.push({
 
-    if (!response.ok) {
-      throw new Error(
-        `TMDB respondió ${response.status} al obtener la temporada`
-      );
-    }
+      id:
+        `70787:1:${episode}`,
 
-    const seasonData = await response.json();
+      type:
+        "series",
 
-    for (const episode of seasonData.episodes || []) {
-      // Si no existe sinopsis en español, pedirla en inglés
-      let overview = episode.overview || "";
+      name:
+        `Choushinsei Flashman ${episode}`,
 
-      if (!overview) {
-        const fallbackUrl =
-          `https://api.themoviedb.org/3/tv/${series.tmdbId}/season/` +
-          `${season.season_number}/episode/${episode.episode_number}` +
-          `?api_key=${process.env.TMDB_API_KEY}` +
-          `&language=en-US`;
+      season:
+        1,
 
-        const fallbackResponse = await fetch(fallbackUrl, {
-      headers: {
-        Authorization: `Bearer ${process.env.TMDB_API_KEY}`,
-        accept: "application/json"
-      }
+      episode:
+
+        episode
+
     });
 
-        if (fallbackResponse.ok) {
-          const fallbackEpisode = await fallbackResponse.json();
-          overview = fallbackEpisode.overview || "";
-        }
-      }
-
-      const directors = (episode.crew || [])
-        .filter((person) => person.job === "Director")
-        .map((person) => person.name);
-
-      const writers = (episode.crew || [])
-        .filter(
-          (person) =>
-            person.job === "Writer" ||
-            person.job === "Screenplay" ||
-            person.job === "Story"
-        )
-        .map((person) => person.name);
-
-      const thumbnail = episode.still_path
-        ? `https://image.tmdb.org/t/p/original${episode.still_path}`
-        : "";
-
-      episodes.push({
-        id: `${series.id}:${season.season_number}:${episode.episode_number}`,
-        type: "episode",
-        seriesId: series.id,
-
-        season: season.season_number,
-        episode: episode.episode_number,
-
-        name:
-          episode.name ||
-          `Episodio ${episode.episode_number}`,
-
-        title:
-          episode.name ||
-          `Episodio ${episode.episode_number}`,
-
-        overview,
-        description: overview,
-
-        released: episode.air_date
-          ? `${episode.air_date}T00:00:00.000Z`
-          : null,
-
-        thumbnail,
-        background: thumbnail,
-
-        runtime: episode.runtime || null,
-
-        rating: episode.vote_average || null,
-        votes: episode.vote_count || 0,
-        imdbRating: episode.vote_average || null,
-
-        directors,
-        writers,
-
-        actors: cast.map((person) => person.name),
-        cast,
-
-        videos: []
-      });
-    }
   }
 
+
   return episodes;
+
+}
+
+
+/*
+============================================================
+EPISODIO INDIVIDUAL
+============================================================
+*/
+
+export function getEpisode(
+  season,
+  episode
+) {
+
+  const s =
+    Number(season);
+
+  const e =
+    Number(episode);
+
+
+  if (
+    s !== 1 ||
+    e < 1 ||
+    e > EPISODE_COUNT
+  ) {
+
+    return null;
+
+  }
+
+
+  return {
+
+    id:
+      `70787:${s}:${e}`,
+
+    type:
+      "series",
+
+    name:
+      `Choushinsei Flashman ${e}`,
+
+    season:
+      s,
+
+    episode:
+      e
+
+  };
+
 }

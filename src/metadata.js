@@ -1,25 +1,26 @@
 /*
 ============================================================
 SUPER SENTAI ADDON
-EXPERIMENTO 16
+EXPERIMENTO 17
 
-TMDB ID:
-70787
+IDENTIFICADOR:
+TMDB TV ID 70787
 
 METADATA EXTERNA:
 ACTIVA
 
-PRUEBA:
-- IMDb rating manual
-- Background manual
+METADATA PERSONALIZADA:
+- IMDb rating
+- Background
+- Poster
+- Logo
+- Trailer
 
-NO:
-- videos[]
-- episodios manuales
-- network manual
-- productionCompany manual
-- poster manual
-- description manual
+EPISODIOS:
+SEPARADOS EN episodes.js
+
+IMPORTANTE:
+NO videos[] EN ESTA RESPUESTA.
 ============================================================
 */
 
@@ -28,26 +29,48 @@ export async function getMetadata() {
   return {
 
     /*
-     * Identificador TMDB real
+     * TMDB
      */
-    id: "70787",
+    id:
+      "70787",
 
-    type: "series",
+    type:
+      "series",
 
-    name: "Choushinsei Flashman",
+    name:
+      "Choushinsei Flashman",
 
     /*
-     * PRUEBA 1
-     * IMDb rating manual
+     * IMDb rating
      */
-    imdbRating: 8.2,
+    imdbRating:
+      8.2,
 
     /*
-     * PRUEBA 2
-     * Background manual
+     * Background
      */
     background:
-      "https://imgbs.com/uploads/flashman-a8f83054.jpg"
+      "https://imgbs.com/uploads/flashman-a8f83054.jpg",
+
+    /*
+     * Poster
+     */
+    poster:
+      "https://image.tmdb.org/t/p/original/wyGFaD0V2bU2Q5uEtJDStZSRoG2.jpg",
+
+    /*
+     * Logo
+     */
+    logo:
+      "https://image.tmdb.org/t/p/original/7jASxo9DcEkuhCQhuJpgkmjoTgt.png",
+
+    /*
+     * Trailer
+     *
+     * Código de YouTube
+     */
+    trailer:
+      "Q_oVf3qpwIk"
 
   };
 
