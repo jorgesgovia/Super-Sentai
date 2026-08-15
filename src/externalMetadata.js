@@ -1,10 +1,8 @@
 /*
- * EXPERIMENTO:
+ * Experimento Nuvio:
  *
- * Esta función NO agrega metadata.
- *
- * Se conserva únicamente porque server.js importa
- * mergeExternalMetadata().
+ * No se consulta ninguna fuente externa.
+ * No se agrega metadata.
  */
 
 export async function getExternalMetadata() {
@@ -12,19 +10,6 @@ export async function getExternalMetadata() {
 }
 
 export async function mergeExternalMetadata(metadata) {
-  /*
-   * DEVOLVEMOS EXACTAMENTE LA METADATA RECIBIDA.
-   *
-   * No TMDB.
-   * No IMDb.
-   * No Plex.
-   * No actores.
-   * No directores.
-   * No escritores.
-   * No descripción.
-   * No ratings.
-   * No artwork adicional.
-   */
   return metadata;
 }
 
