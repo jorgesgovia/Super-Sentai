@@ -1,85 +1,33 @@
 /*
- * EXPERIMENTO DE METADATA MÍNIMA PARA NUVIO
+ * EXPERIMENTO:
  *
- * La metadata externa permanece mínima.
- * Se conserva mergeExternalMetadata porque server.js
- * depende de esta función.
+ * Esta función NO agrega metadata.
+ *
+ * Se conserva únicamente porque server.js importa
+ * mergeExternalMetadata().
  */
 
 export async function getExternalMetadata() {
-  return {
-    id: "tt0090407",
-    type: "series",
-
-    name: "Choushinsei Flashman",
-    originalName: "超新星フラッシュマン",
-
-    imdb_id: "tt0090407",
-    tmdb_id: "70787",
-
-    genres: [
-      "Action",
-      "Adventure",
-      "Science Fiction"
-    ],
-
-    network: "tv asahi",
-
-    networks: [
-      {
-        name: "tv asahi",
-        tmdbId: 103,
-        logo:
-          "https://image.tmdb.org/t/p/w185/j3xAzk1SYQQwrQOD7acdSz675Wa.png"
-      }
-    ],
-
-    productionCompanies: [
-      {
-        name: "Toei Company",
-        tmdbId: 5822,
-        logo:
-          "https://image.tmdb.org/t/p/w185/qyTbRgCyU9NLKvKaiQVbadtr7RY.png"
-      }
-    ]
-  };
+  return {};
 }
 
-/*
- * Compatibilidad con server.js
- *
- * Mezcla la metadata externa con la metadata principal
- * sin eliminar los campos existentes.
- */
 export async function mergeExternalMetadata(metadata) {
-  const external = await getExternalMetadata();
-
-  return {
-    ...metadata,
-    ...external,
-
-    /*
-     * Conservamos explícitamente estos campos
-     * del experimento.
-     */
-    genres:
-      external.genres ??
-      metadata.genres,
-
-    network:
-      external.network ??
-      metadata.network,
-
-    networks:
-      external.networks ??
-      metadata.networks,
-
-    productionCompanies:
-      external.productionCompanies ??
-      metadata.productionCompanies
-  };
+  /*
+   * DEVOLVEMOS EXACTAMENTE LA METADATA RECIBIDA.
+   *
+   * No TMDB.
+   * No IMDb.
+   * No Plex.
+   * No actores.
+   * No directores.
+   * No escritores.
+   * No descripción.
+   * No ratings.
+   * No artwork adicional.
+   */
+  return metadata;
 }
 
 export async function buildExternalMetadata() {
-  return getExternalMetadata();
+  return {};
 }
