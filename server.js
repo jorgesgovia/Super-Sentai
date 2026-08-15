@@ -5,16 +5,14 @@ import {
   getMetadata
 } from "./src/metadata.js";
 
-const app =
-  express();
+import {
+  getStreams
+} from "./src/streams.js";
 
-app.use(
-  cors()
-);
+const app = express();
 
-app.use(
-  express.json()
-);
+app.use(cors());
+app.use(express.json());
 
 const PORT =
   process.env.PORT || 7070;
@@ -26,7 +24,6 @@ const ADDON_NAME =
   "Super Sentai Addon";
 
 function noCache(res) {
-
   res.setHeader(
     "Cache-Control",
     "no-store, no-cache, must-revalidate, proxy-revalidate"
@@ -41,7 +38,6 @@ function noCache(res) {
     "Expires",
     "0"
   );
-
 }
 
 /*
@@ -50,87 +46,53 @@ ROOT
 ============================================================
 */
 
-app.get(
-  "/",
-  (req, res) => {
-
-    res.json({
-
-      addon:
-        ADDON_NAME,
-
-      status:
-        "ok"
-
-    });
-
-  }
-);
+app.get("/", (req, res) => {
+  res.json({
+    addon: ADDON_NAME,
+    status: "ok"
+  });
+});
 
 /*
 ============================================================
 MANIFEST
 ============================================================
-
-VOLVEMOS AL ESTADO ORIGINAL:
-
-SOLAMENTE SERIES.
-
-NO:
-episode
-videos
-episode metadata
-============================================================
 */
 
-app.get(
-  "/manifest.json",
-  (req, res) => {
+app.get("/manifest.json", (req, res) => {
 
-    res.json({
+  res.json({
 
-      id:
-        ADDON_ID,
+    id: ADDON_ID,
 
-      version:
-        "1.0.0",
+    version: "1.0.0",
 
-      name:
-        ADDON_NAME,
+    name: ADDON_NAME,
 
-      description:
-        "Super Sentai Addon para Nuvio",
+    description:
+      "Super Sentai Addon para Nuvio",
 
-      resources: [
-        "catalog",
-        "meta",
-        "stream"
-      ],
+    resources: [
+      "catalog",
+      "meta",
+      "stream"
+    ],
 
-      types: [
-        "series"
-      ],
+    types: [
+      "series"
+    ],
 
-      catalogs: [
+    catalogs: [
+      {
+        type: "series",
+        id: "super-sentai",
+        name: "Super Sentai"
+      }
+    ]
 
-        {
-          type:
-            "series",
+  });
 
-          id:
-            "super-sentai",
-
-          name:
-            "Super Sentai"
-
-        }
-
-      ]
-
-    });
-
-  }
-);
+});
 
 /*
 ============================================================
@@ -152,9 +114,7 @@ app.get(
       res.json({
 
         metas: [
-
           {
-
             id:
               metadata.id,
 
@@ -189,7 +149,7 @@ app.get(
               metadata.imdb_id,
 
             /*
-             * EXACTAMENTE COMO LOS QUEREMOS.
+             * CONSERVAMOS LOS STRINGS.
              */
 
             network:
@@ -197,9 +157,7 @@ app.get(
 
             productionCompany:
               metadata.productionCompany
-
           }
-
         ]
 
       });
@@ -212,9 +170,7 @@ app.get(
       );
 
       res.status(500).json({
-
         metas: []
-
       });
 
     }
@@ -225,14 +181,6 @@ app.get(
 /*
 ============================================================
 META SERIES
-============================================================
-
-SIN videos[].
-
-SIN rutas especiales de episodios.
-
-ESTO NOS PERMITE COMPROBAR SI LOS EPISODIOS
-SON LOS QUE ESTÁN INTERFIRIENDO.
 ============================================================
 */
 
@@ -253,7 +201,7 @@ app.get(
       );
 
       console.log(
-        " META SERIES — EXPERIMENTO 10"
+        " META SERIES — EXPERIMENTO 11"
       );
 
       console.log(
@@ -276,28 +224,39 @@ app.get(
       );
 
       console.log(
-        "Episodes:",
-        "DESHABILITADOS PARA LA PRUEBA"
+        "Videos:",
+        metadata.videos.length
       );
 
+      console.log(
+        "First video:",
+        JSON.stringify(
+          metadata.videos[0],
+          null,
+          2
+        )
+      );
+
+      /*
+       * ENTREGAMOS LA META COMPLETA.
+       *
+       * videos[] es la ÚNICA estructura especial
+       * añadida para los episodios.
+       */
+
       res.json({
-
-        meta:
-          metadata
-
+        meta: metadata
       });
 
     } catch (error) {
 
       console.error(
-        "META SERIES ERROR:",
+        "META ERROR:",
         error
       );
 
       res.status(500).json({
-
         meta: {}
-
       });
 
     }
@@ -323,23 +282,18 @@ app.get(
       noCache(res);
 
       res.json({
-
-        meta:
-          metadata
-
+        meta: metadata
       });
 
     } catch (error) {
 
       console.error(
-        "META ERROR:",
+        "META FALLBACK ERROR:",
         error
       );
 
       res.status(500).json({
-
         meta: {}
-
       });
 
     }
@@ -349,21 +303,159 @@ app.get(
 
 /*
 ============================================================
-IMPORTANTE
+STREAM
 ============================================================
+*/
 
-NO CREAMOS:
+app.get(
+  "/stream/:type/:id.json",
+  async (req, res) => {
 
-/meta/episode/...
+    try {
 
-NO CREAMOS:
+      const requestedId =
+        req.params.id;
 
-videos[]
+      console.log("");
+      console.log(
+        "======================================"
+      );
 
-NO DECLARAMOS:
+      console.log(
+        " STREAM REQUEST"
+      );
 
-episode
+      console.log(
+        "======================================"
+      );
 
+      console.log(
+        "Type:",
+        req.params.type
+      );
+
+      console.log(
+        "ID:",
+        requestedId
+      );
+
+      /*
+       * ====================================================
+       * EPISODIO
+       * ====================================================
+       *
+       * Nuvio/Stremio debe enviar:
+       *
+       * 70787:1:1
+       * 70787:1:2
+       * ...
+       */
+
+      if (
+        /^70787:1:\d+$/.test(
+          requestedId
+        )
+      ) {
+
+        console.log(
+          "EPISODE STREAM"
+        );
+
+        const streams =
+          await getStreams(
+            requestedId
+          );
+
+        console.log(
+          "Streams:",
+          Array.isArray(streams)
+            ? streams.length
+            : 0
+        );
+
+        return res.json({
+
+          streams:
+            Array.isArray(streams)
+              ? streams
+              : []
+
+        });
+
+      }
+
+      /*
+       * ====================================================
+       * SERIE
+       * ====================================================
+       *
+       * Conservamos también esta posibilidad para que
+       * el botón Reproducir de la ficha no se quede vacío.
+       */
+
+      if (
+        requestedId === "70787"
+      ) {
+
+        console.log(
+          "SERIES STREAM REQUEST"
+        );
+
+        const streams =
+          await getStreams(
+            requestedId
+          );
+
+        return res.json({
+
+          streams:
+            Array.isArray(streams)
+              ? streams
+              : []
+
+        });
+
+      }
+
+      /*
+       * ====================================================
+       * FALLBACK
+       * ====================================================
+       */
+
+      const streams =
+        await getStreams(
+          requestedId
+        );
+
+      res.json({
+
+        streams:
+          Array.isArray(streams)
+            ? streams
+            : []
+
+      });
+
+    } catch (error) {
+
+      console.error(
+        "STREAM ERROR:",
+        error
+      );
+
+      res.json({
+        streams: []
+      });
+
+    }
+
+  }
+);
+
+/*
+============================================================
+START
 ============================================================
 */
 
@@ -383,7 +475,7 @@ app.listen(
     );
 
     console.log(
-      " EXPERIMENTO 10"
+      " EXPERIMENTO 11"
     );
 
     console.log(
@@ -411,15 +503,16 @@ app.listen(
     );
 
     console.log(
-      " EPISODIOS: DESHABILITADOS"
+      " EPISODES: 50"
     );
 
     console.log(
-      " STREAMS: DESHABILITADOS PARA LA PRUEBA"
+      " STREAMS: Google Drive"
     );
 
     console.log(
       "======================================"
+
     );
 
   }

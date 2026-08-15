@@ -1,3 +1,29 @@
+const TOTAL_EPISODES = 50;
+
+function createEpisode(number) {
+  return {
+    id: `70787:1:${number}`,
+
+    title: `Episodio ${number}`,
+
+    season: 1,
+
+    episode: number,
+
+    overview:
+      `Choushinsei Flashman — Episodio ${number}. Los Flashman continúan enfrentando al Imperio Mess y protegiendo la Tierra.`,
+
+    released: "1986-03-01"
+  };
+}
+
+function createEpisodes() {
+  return Array.from(
+    { length: TOTAL_EPISODES },
+    (_, index) => createEpisode(index + 1)
+  );
+}
+
 export async function getMetadata() {
   return {
     id: "70787",
@@ -21,8 +47,10 @@ export async function getMetadata() {
     ],
 
     /*
-     * ESTOS SON LOS VALORES DEL ESTADO
-     * QUE SÍ HACÍA NAVEGABLES RED Y PRODUCCIÓN.
+     * NO TOCAR.
+     *
+     * Esta estructura ya comprobamos que hace que
+     * Nuvio permita seleccionar Red y Producción.
      */
 
     network: "TV Asahi",
@@ -30,7 +58,26 @@ export async function getMetadata() {
     productionCompany: "Toei Company",
 
     description:
-      "Choushinsei Flashman es una serie japonesa de Super Sentai producida por Toei Company y transmitida por TV Asahi entre 1986 y 1987."
+      "Choushinsei Flashman es una serie japonesa de Super Sentai producida por Toei Company y transmitida por TV Asahi entre 1986 y 1987.",
+
+    /*
+     * ======================================================
+     * EPISODIOS
+     * ======================================================
+     *
+     * IMPORTANTE:
+     *
+     * Esta vez son objetos Video estándar.
+     *
+     * NO:
+     * type
+     * seriesId
+     * networks
+     * productionCompanies
+     *
+     */
+
+    videos: createEpisodes()
   };
 }
 
