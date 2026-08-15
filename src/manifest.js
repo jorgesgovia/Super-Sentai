@@ -1,6 +1,6 @@
 export const manifest = {
   id: "com.super-sentai.addon",
-  version: "1.0.1",
+  version: "1.0.0",
   name: "Super Sentai Addon",
   description:
     "Addon de Stremio para series Super Sentai con metadata estática.",
@@ -21,6 +21,7 @@ export const manifest = {
     }
   ],
   idPrefixes: [
+    "super-sentai-",
     "70787"
   ]
 };

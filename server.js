@@ -63,13 +63,13 @@ app.get("/manifest.json", (req, res) => {
       {
         name: "meta",
         types: ["series"],
-        idPrefixes: ["70787"]
+        idPrefixes: ["super-sentai-"]
       },
 
       {
         name: "stream",
         types: ["series"],
-        idPrefixes: ["70787"]
+        idPrefixes: ["super-sentai-"]
       }
     ],
 
@@ -205,49 +205,6 @@ app.get("/meta/:type/:id.json", async (req, res) => {
 
     const metadata = await getMetadata();
 
-    /*
-     * ========================================================
-     * EXTERNAL METADATA / TMDB / CINEMETA
-     * ========================================================
-     *
-     * Enriquecemos la metadata ANTES de construir finalMeta.
-     *
-     * Esto permite que Nuvio reciba:
-     * - networks
-     * - productionCompanies
-     * - tmdbId
-     * - logos
-     * - créditos
-     * - ratings
-     * - IDs externos
-     *
-     * La reproducción de nuestros episodios no cambia.
-     */
-
-    let enrichedMetadata = metadata;
-
-    try {
-      enrichedMetadata = await mergeExternalMetadata(
-        metadata,
-        metadata.imdb_id
-      );
-
-      console.log(
-        "METADATA EXTERNA INTEGRADA:",
-        JSON.stringify({
-          networks:
-            enrichedMetadata.networks || [],
-          productionCompanies:
-            enrichedMetadata.productionCompanies || []
-        })
-      );
-    } catch (error) {
-      console.error(
-        "ERROR METADATA EXTERNA:",
-        error.message
-      );
-    }
-
 
     /*
      * ========================================================
@@ -258,8 +215,8 @@ app.get("/meta/:type/:id.json", async (req, res) => {
      *
      * El ID de cada video es:
      *
-     * 70787:1:1
-     * 70787:1:2
+     * super-sentai-flashman:1:1
+     * super-sentai-flashman:1:2
      * ...
      *
      * Ese mismo ID será utilizado posteriormente
@@ -286,8 +243,8 @@ app.get("/meta/:type/:id.json", async (req, res) => {
      *
      * Cada episodio recibe nuestro ID interno:
      *
-     * 70787:1:1
-     * 70787:1:2
+     * super-sentai-flashman:1:1
+     * super-sentai-flashman:1:2
      * ...
      *
      * De esta manera Nuvio puede mostrar la información de
@@ -322,7 +279,7 @@ app.get("/meta/:type/:id.json", async (req, res) => {
 
         return {
           id:
-            `70787:1:${episodeNumber}`,
+            `super-sentai-flashman:1:${episodeNumber}`,
 
           title:
             episode.title ||
@@ -406,120 +363,17 @@ app.get("/meta/:type/:id.json", async (req, res) => {
      */
 
     const finalMeta = {
+      ...metadata,
+
       /*
-       * ========================================================
-       * IDENTIDAD PUBLICA
-       * ========================================================
+       * El ID que Nuvio pidió debe coincidir con el ID público.
        */
       id: "70787",
-      type: "series",
 
       /*
-       * ========================================================
-       * METADATA EXTERNA
-       * ========================================================
+       * Nuestros episodios conservan IDs internos para Drive.
        */
-      ...enrichedMetadata,
-
-      /*
-       * ========================================================
-       * TMDB REAL
-       * ========================================================
-       *
-       * Choushinsei Flashman
-       * TMDB TV ID: 70787
-       *
-       * Nuvio puede utilizar esta identidad para su
-       * navegación/enriquecimiento TMDB.
-       */
-      tmdb_id: 70787,
-      tmdbId: 70787,
-
-      /*
-       * ========================================================
-       * NETWORK NAVEGABLE
-       * ========================================================
-       *
-       * tv asahi = TMDB Network 103
-       */
-      networks: [
-        {
-          name: "tv asahi",
-          logo:
-            "https://image.tmdb.org/t/p/w185/j3xAzk1SYQQwrQOD7acdSz675Wa.png",
-          tmdbId: 103
-        }
-      ],
-
-      /*
-       * ========================================================
-       * PRODUCTORA NAVEGABLE
-       * ========================================================
-       *
-       * Toei Company = TMDB Company 5822
-       */
-      productionCompanies: [
-        {
-          name: "Toei Company",
-          logo:
-            "https://image.tmdb.org/t/p/w185/qyTbRgCyU9NLKvKaiQVbadtr7RY.png",
-          tmdbId: 5822
-        }
-      ],
-
-      production_companies: [
-        {
-          name: "Toei Company",
-          logo:
-            "https://image.tmdb.org/t/p/w185/qyTbRgCyU9NLKvKaiQVbadtr7RY.png",
-          tmdbId: 5822
-        }
-      ],
-
-      /*
-       * ========================================================
-       * NAVEGACION EXPLICITA
-       * ========================================================
-       */
-      links: [
-        ...(Array.isArray(enrichedMetadata?.links)
-          ? enrichedMetadata.links
-          : []),
-
-        {
-          name: "tv asahi",
-          category: "Network",
-          url: "https://www.themoviedb.org/network/103"
-        },
-
-        {
-          name: "Toei Company",
-          category: "Production",
-          url: "https://www.themoviedb.org/company/5822"
-        }
-      ],
-
-      /*
-       * ========================================================
-       * VIDEOS DEL ADDON
-       * ========================================================
-       *
-       * NO CAMBIAR.
-       */
-      videos,
-
-      /*
-       * ========================================================
-       * MEDIA PERSONALIZADO
-       * ========================================================
-       */
-      background:
-        metadata.background,
-
-      trailerYtIds:
-        Array.isArray(metadata.trailerYtIds)
-          ? metadata.trailerYtIds
-          : []
+      videos
     };
 
 
@@ -575,9 +429,9 @@ app.get("/meta/:type/:id.json", async (req, res) => {
  *
  * Nuvio/Stremio debe solicitar:
  *
- * /stream/series/70787:1:1.json
+ * /stream/series/super-sentai-flashman:1:1.json
  *
- * /stream/series/70787:1:2.json
+ * /stream/series/super-sentai-flashman:1:2.json
  *
  * etc.
  *
@@ -623,7 +477,7 @@ app.get("/stream/:type/:id.json", async (req, res) => {
 
     if (
       !id.startsWith(
-        "70787:"
+        "super-sentai-flashman:"
       )
     ) {
 
