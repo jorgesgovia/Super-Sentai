@@ -25,6 +25,7 @@ const ADDON_NAME =
   "Super Sentai Addon";
 
 function noCache(res) {
+
   res.setHeader(
     "Cache-Control",
     "no-store, no-cache, must-revalidate, proxy-revalidate"
@@ -42,12 +43,15 @@ function noCache(res) {
 }
 
 function parseEpisodeId(id) {
+
   const match =
     String(id).match(
       /^70787:1:(\d+)$/
     );
 
-  if (!match) return null;
+  if (!match) {
+    return null;
+  }
 
   return Number(match[1]);
 }
@@ -59,10 +63,12 @@ ROOT
 */
 
 app.get("/", (req, res) => {
+
   res.json({
     addon: ADDON_NAME,
     status: "ok"
   });
+
 });
 
 /*
@@ -76,6 +82,7 @@ app.get(
   (req, res) => {
 
     res.json({
+
       id: ADDON_ID,
 
       version: "1.0.0",
@@ -85,6 +92,14 @@ app.get(
       description:
         "Super Sentai Addon para Nuvio",
 
+      /*
+       * IMPORTANTE:
+       *
+       * VOLVEMOS A DECLARAR SOLAMENTE SERIES.
+       *
+       * No agregamos "episode".
+       */
+
       resources: [
         "catalog",
         "meta",
@@ -92,8 +107,7 @@ app.get(
       ],
 
       types: [
-        "series",
-        "episode"
+        "series"
       ],
 
       catalogs: [
@@ -103,6 +117,7 @@ app.get(
           name: "Super Sentai"
         }
       ]
+
     });
 
   }
@@ -126,16 +141,25 @@ app.get(
       noCache(res);
 
       res.json({
+
         metas: [
+
           {
-            id: metadata.id,
 
-            type: "series",
+            id:
+              metadata.id,
 
-            name: metadata.name,
+            type:
+              "series",
 
-            poster: metadata.poster,
-            background: metadata.background,
+            name:
+              metadata.name,
+
+            poster:
+              metadata.poster,
+
+            background:
+              metadata.background,
 
             description:
               metadata.description,
@@ -156,16 +180,19 @@ app.get(
               metadata.imdb_id,
 
             /*
-             * ENTIDADES
+             * STRINGS ORIGINALES
              */
 
             network:
-              metadata.network,
+              "TV Asahi",
 
             productionCompany:
-              metadata.productionCompany
+              "Toei Company"
+
           }
+
         ]
+
       });
 
     } catch (error) {
@@ -180,6 +207,7 @@ app.get(
       });
 
     }
+
   }
 );
 
@@ -214,7 +242,7 @@ app.get(
       );
 
       console.log(
-        "Requested:",
+        "ID:",
         req.params.id
       );
 
@@ -233,6 +261,11 @@ app.get(
         metadata.videos.length
       );
 
+      /*
+       * ENTREGAMOS TODO EL OBJETO
+       * SIN TRANSFORMAR NETWORK/PRODUCTION.
+       */
+
       res.json({
         meta: metadata
       });
@@ -249,6 +282,7 @@ app.get(
       });
 
     }
+
   }
 );
 
@@ -264,20 +298,22 @@ app.get(
 
     try {
 
-      const number =
+      const episode =
         parseEpisodeId(
           req.params.id
         );
 
-      if (!number) {
+      if (!episode) {
+
         return res.status(404).json({
           meta: {}
         });
+
       }
 
       const metadata =
         await getEpisodeMetadata(
-          number
+          episode
         );
 
       noCache(res);
@@ -298,6 +334,7 @@ app.get(
       });
 
     }
+
   }
 );
 
@@ -334,6 +371,7 @@ app.get(
       });
 
     }
+
   }
 );
 
@@ -376,7 +414,7 @@ app.get(
       );
 
       /*
-       * EPISODIO INDIVIDUAL
+       * EPISODIO
        */
 
       if (
@@ -391,10 +429,12 @@ app.get(
           );
 
         return res.json({
+
           streams:
             Array.isArray(streams)
               ? streams
               : []
+
         });
 
       }
@@ -435,6 +475,7 @@ app.get(
               ) {
 
                 allStreams.push({
+
                   ...stream,
 
                   title:
@@ -445,11 +486,13 @@ app.get(
                     stream.name ||
                     `Episodio ${episode}`,
 
-                  season: 1,
+                  season:
+                    1,
 
                   episode,
 
                   episodeId
+
                 });
 
               }
@@ -465,16 +508,18 @@ app.get(
             );
 
           }
+
         }
 
         console.log(
-          "TOTAL STREAMS:",
+          "TOTAL DRIVE STREAMS:",
           allStreams.length
         );
 
         return res.json({
           streams: allStreams
         });
+
       }
 
       /*
@@ -487,10 +532,12 @@ app.get(
         );
 
       res.json({
+
         streams:
           Array.isArray(streams)
             ? streams
             : []
+
       });
 
     } catch (error) {
@@ -505,6 +552,7 @@ app.get(
       });
 
     }
+
   }
 );
 
