@@ -1,571 +1,121 @@
-import https from "node:https";
-import { getTmdbSeries } from "./tmdb.js";
-
-function getJSON(url, headers = {}, redirects = 0) {
-  return new Promise((resolve, reject) => {
-    const req = https.get(url, { headers }, (res) => {
-      let data = "";
-
-      res.on("data", (chunk) => {
-        data += chunk;
-      });
-
-      res.on("end", () => {
-        if (
-          res.statusCode >= 300 &&
-          res.statusCode < 400 &&
-          res.headers.location
-        ) {
-          if (redirects >= 5) {
-            reject(
-              new Error(
-                `Demasiadas redirecciones en ${url}`
-              )
-            );
-            return;
-          }
-
-          getJSON(
-            new URL(
-              res.headers.location,
-              url
-            ).toString(),
-            headers,
-            redirects + 1
-          )
-            .then(resolve)
-            .catch(reject);
-
-          return;
-        }
-
-        if (res.statusCode < 200 || res.statusCode >= 300) {
-          reject(
-            new Error(
-              `HTTP ${res.statusCode} en ${url}`
-            )
-          );
-          return;
-        }
-
-        try {
-          resolve(JSON.parse(data));
-        } catch (error) {
-          reject(error);
-        }
-      });
-    });
-
-    req.on("error", reject);
-
-    req.setTimeout(15000, () => {
-      req.destroy(new Error(`Timeout en ${url}`));
-    });
-  });
-}
-
-function first(...values) {
-  return values.find(
-    (value) =>
-      value !== undefined &&
-      value !== null &&
-      value !== "" &&
-      !(Array.isArray(value) && value.length === 0)
-  );
-}
-
-function uniquePeople(list = []) {
-  const seen = new Set();
-
-  return list.filter((person) => {
-    const name =
-      typeof person === "string"
-        ? person
-        : person?.name;
-
-    if (!name) return false;
-
-    const key = name.toLowerCase();
-
-    if (seen.has(key)) return false;
-
-    seen.add(key);
-
-    return true;
-  });
-}
+/*
+ * SUPER SENTAI ADDON
+ * METADATA MANUAL
+ *
+ * No consulta IMDb.
+ * No consulta TMDB.
+ * No consulta Cinemeta.
+ * No enriquecimiento externo.
+ */
 
 export async function mergeExternalMetadata(meta, imdbId) {
-  let tmdb = null;
-  let cinemetaData = null;
-
-  try {
-    cinemetaData = await getJSON(
-      `https://v3-cinemeta.strem.io/meta/tv/${encodeURIComponent(imdbId)}.json`
-    );
-
-    console.log(
-      "[externalMetadata] Cinemeta integrado:",
-      cinemetaData?.meta?.name || "sin nombre"
-    );
-  } catch (error) {
-    console.log(
-      "[externalMetadata] Cinemeta no disponible:",
-      error.message
-    );
-  }
-
-  const tmdbToken = process.env.TMDB_API_KEY;
-
-  if (tmdbToken && meta?.tmdb_id) {
-    try {
-      tmdb = await getTmdbSeries(
-        meta.tmdb_id
-      );
-
-      console.log(
-        "[externalMetadata] TMDB integrado:",
-        tmdb?.name || "sin nombre"
-      );
-    } catch (error) {
-      console.log(
-        "[externalMetadata] TMDB error:",
-        error.message
-      );
-    }
-  } else {
-    console.log(
-      "[externalMetadata] TMDB token o ID no disponible"
-    );
-  }
-
-  const cm = cinemetaData?.meta || {};
-
-  const tmdbCast =
-    (tmdb?.credits?.cast || [])
-      .slice(0, 30)
-      .map((person) => ({
-        name: person.name,
-        character:
-          person.character || undefined,
-        photo: person.profile_path
-          ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
-          : undefined,
-      }));
-
-  const cinemetaCast =
-    Array.isArray(cm.cast)
-      ? cm.cast.map((person) => {
-          if (typeof person === "string") {
-            return {
-              name: person,
-            };
-          }
-
-          return {
-            name: person.name,
-            character:
-              person.character ||
-              person.characterName ||
-              undefined,
-            photo:
-              person.photo ||
-              person.profile ||
-              undefined,
-          };
-        })
-      : [];
-
-  const cast = uniquePeople([
-    ...tmdbCast,
-    ...cinemetaCast,
-    ...(Array.isArray(meta?.cast)
-      ? meta.cast
-      : []),
-  ]).slice(0, 30);
-
-  const tmdbDirectors =
-    (tmdb?.credits?.crew || [])
-      .filter(
-        (person) =>
-          person.job === "Director"
-      )
-      .map((person) => ({
-        name: person.name,
-        photo: person.profile_path
-          ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
-          : undefined,
-      }));
-
-  const cinemetaDirectors =
-    Array.isArray(cm.director)
-      ? cm.director.map((person) =>
-          typeof person === "string"
-            ? { name: person }
-            : person
-        )
-      : [];
-
-  const directors = uniquePeople([
-    ...tmdbDirectors,
-    ...cinemetaDirectors,
-    ...(Array.isArray(meta?.director)
-      ? meta.director
-      : []),
-  ]);
-
-  const tmdbWriters =
-    (tmdb?.credits?.crew || [])
-      .filter(
-        (person) =>
-          person.job === "Writer" ||
-          person.job === "Screenplay" ||
-          person.job === "Story"
-      )
-      .map((person) => ({
-        name: person.name,
-        photo: person.profile_path
-          ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
-          : undefined,
-      }));
-
-  const cinemetaWriters =
-    Array.isArray(cm.writer)
-      ? cm.writer.map((person) =>
-          typeof person === "string"
-            ? { name: person }
-            : person
-        )
-      : [];
-
-  const writers = uniquePeople([
-    ...tmdbWriters,
-    ...cinemetaWriters,
-    ...(Array.isArray(meta?.writer)
-      ? meta.writer
-      : []),
-  ]);
-
-  const tmdbProductionCompanies =
-    tmdb?.production_companies?.map(
-      (company) => company.name
-    ) || [];
-
-  const cinemetaProductionCompanies =
-    Array.isArray(cm.productionCompanies)
-      ? cm.productionCompanies.map(
-          (company) =>
-            typeof company === "string"
-              ? company
-              : company?.name
-        )
-      : [];
-
-  const productionCompanies = [
-    ...new Set(
-      [
-        ...tmdbProductionCompanies,
-        ...cinemetaProductionCompanies,
-        ...(Array.isArray(
-          meta?.productionCompanies
-        )
-          ? meta.productionCompanies
-          : []),
-      ].filter(Boolean)
-    ),
-  ];
-
-  const tmdbGenres =
-    tmdb?.genres?.map(
-      (genre) => genre.name
-    ) || [];
-
-  const cinemetaGenres =
-    Array.isArray(cm.genres)
-      ? cm.genres.map((genre) =>
-          typeof genre === "string"
-            ? genre
-            : genre?.name ||
-              genre?.title
-        )
-      : [];
-
-  const genres = [
-    ...new Set(
-      [
-        ...tmdbGenres,
-        ...cinemetaGenres,
-        ...(Array.isArray(meta?.genres)
-          ? meta.genres
-          : []),
-      ].filter(Boolean)
-    ),
-  ];
-
-  const imdbRating = first(
-    cm.imdbRating,
-    meta?.imdbRating
-  );
-
-  const imdbVotes = first(
-    cm.imdbVotes,
-    meta?.imdbVotes
-  );
-
-  const tmdbRating =
-    typeof tmdb?.vote_average === "number"
-      ? tmdb.vote_average
-      : undefined;
-
-  const poster = first(
-    meta?.poster,
-    cm.poster,
-    tmdb?.poster_path
-      ? `https://image.tmdb.org/t/p/original${tmdb.poster_path}`
-      : undefined
-  );
-
-  const customBackground =
-    meta?.background;
-
-  const customTrailerYtIds =
-    Array.isArray(
-      meta?.trailerYtIds
-    )
-      ? meta.trailerYtIds.filter(Boolean)
-      : [];
-
-  const background = first(
-    meta?.background,
-    cm.background,
-    tmdb?.backdrop_path
-      ? `https://image.tmdb.org/t/p/original${tmdb.backdrop_path}`
-      : undefined
-  );
-
-  const logo = first(
-    meta?.logo,
-    cm.logo,
-    tmdb?.images?.logos?.find(
-      (x) => x.iso_639_1 === "es"
-    )?.file_path
-      ? `https://image.tmdb.org/t/p/original${
-          tmdb.images.logos.find(
-            (x) => x.iso_639_1 === "es"
-          ).file_path
-        }`
-      : undefined,
-    tmdb?.images?.logos?.find(
-      (x) => x.iso_639_1 === "en"
-    )?.file_path
-      ? `https://image.tmdb.org/t/p/original${
-          tmdb.images.logos.find(
-            (x) => x.iso_639_1 === "en"
-          ).file_path
-        }`
-      : undefined
-  );
-
-  const network = first(
-    meta?.network,
-    cm.network,
-    tmdb?.networks?.[0]?.name
-  );
-
-  const merged = {
+  return {
     ...meta,
 
-    imdb_id: first(
-      meta?.imdb_id,
-      cm.imdb_id,
-      imdbId
-    ),
+    id: meta?.id || "super-sentai-flashman",
+    type: meta?.type || "series",
+    name: meta?.name || "Choushinsei Flashman",
 
-    tmdb_id: first(
-      meta?.tmdb_id,
-      cm.tmdb_id,
-      tmdb?.id
-    ),
+    poster: meta?.poster,
+    background: meta?.background,
 
-    tvdb_id: first(
-      meta?.tvdb_id,
-      cm.tvdb_id,
-      tmdb?.external_ids?.tvdb_id
-    ),
+    description: meta?.description,
+    overview: meta?.overview,
 
-    name: first(
-      meta?.name,
-      cm.name,
-      tmdb?.name
-    ),
+    year: meta?.year,
+    releaseInfo: meta?.releaseInfo,
+    releaseYear: meta?.releaseYear,
+    released: meta?.released,
 
-    originalName: first(
-      meta?.originalName,
-      cm.originalName,
-      tmdb?.original_name
-    ),
+    genres: meta?.genres || [],
+    genre: meta?.genre || meta?.genres || [],
 
-    description: first(
-      meta?.description,
-      cm.description,
-      tmdb?.overview
-    ),
+    tagline: meta?.tagline,
 
-    overview: first(
-      meta?.overview,
-      cm.overview,
-      tmdb?.overview
-    ),
+    runtime: meta?.runtime,
+    duration: meta?.duration,
 
-    poster,
+    status: meta?.status,
 
-    background:
-      customBackground || background,
+    rating: meta?.rating,
+    imdbRating: meta?.imdbRating,
+
+    ratings: meta?.ratings || [],
+
+    tmdb: meta?.tmdb,
+    tmdbRating: meta?.tmdbRating,
+    tmdbScore: meta?.tmdbScore,
+    tmdb_score: meta?.tmdb_score,
+
+    language: meta?.language,
+    originalLanguage: meta?.originalLanguage,
+
+    spokenLanguages: meta?.spokenLanguages || [],
+    spokenLanguage: meta?.spokenLanguage,
+    languages: meta?.languages || [],
+
+    country: meta?.country,
 
     trailerYtIds:
-      customTrailerYtIds,
+      Array.isArray(meta?.trailerYtIds)
+        ? meta.trailerYtIds
+        : [],
 
-    logo,
+    certificate: meta?.certificate,
+    certification: meta?.certification,
+    ageRating: meta?.ageRating,
 
-    year: first(
-      meta?.year,
-      cm.year,
-      tmdb?.first_air_date
-        ? Number(
-            tmdb.first_air_date.slice(0, 4)
-          )
-        : undefined
-    ),
+    cast:
+      Array.isArray(meta?.cast)
+        ? meta.cast
+        : [],
 
-    releaseInfo: first(
-      meta?.releaseInfo,
-      cm.releaseInfo,
-      tmdb?.first_air_date
-    ),
+    actors:
+      Array.isArray(meta?.actors)
+        ? meta.actors
+        : meta?.cast || [],
 
-    status: first(
-      meta?.status,
-      cm.status,
-      tmdb?.status
-    ),
+    director:
+      Array.isArray(meta?.director)
+        ? meta.director
+        : [],
 
-    runtime: first(
-      meta?.runtime,
-      cm.runtime,
-      tmdb?.episode_run_time?.[0]
-    ),
+    directors:
+      Array.isArray(meta?.directors)
+        ? meta.directors
+        : meta?.director || [],
 
-    country: first(
-      meta?.country,
-      cm.country,
-      tmdb?.origin_country
-    ),
+    writer:
+      Array.isArray(meta?.writer)
+        ? meta.writer
+        : [],
 
-    language: first(
-      meta?.language,
-      cm.language,
-      tmdb?.original_language
-    ),
+    writers:
+      Array.isArray(meta?.writers)
+        ? meta.writers
+        : meta?.writer || [],
 
-    genres,
-
-    genre: genres,
-
-    rating: first(
-      meta?.rating,
-      tmdbRating,
-      cm.rating
-    ),
-
-    tmdbRating,
-
-    vote_average:
-      typeof tmdb?.vote_average === "number"
-        ? tmdb.vote_average
-        : undefined,
-
-    imdbRating,
-
-    imdbVotes,
-
-    network,
-
-    productionCompanies,
+    productionCompanies:
+      Array.isArray(meta?.productionCompanies)
+        ? meta.productionCompanies
+        : [],
 
     production_companies:
-      productionCompanies,
+      Array.isArray(meta?.production_companies)
+        ? meta.production_companies
+        : meta?.productionCompanies || [],
 
-    cast,
+    network:
+      meta?.network,
 
-    actors: cast,
+    networks:
+      Array.isArray(meta?.networks)
+        ? meta.networks
+        : [],
 
-    director: directors,
-
-    directors,
-
-    writer: writers,
-
-    writers,
-
-    tagline: first(
-      meta?.tagline,
-      cm.tagline,
-      tmdb?.tagline
-    ),
-
-    links: [
-      ...(Array.isArray(meta?.links)
+    links:
+      Array.isArray(meta?.links)
         ? meta.links
-        : []),
-
-      ...(Array.isArray(cm.links)
-        ? cm.links
-        : []),
-    ].filter(
-      (link, index, array) =>
-        index ===
-        array.findIndex(
-          (x) =>
-            x?.url === link?.url &&
-            x?.name === link?.name
-        )
-    ),
+        : []
   };
-
-  console.log(
-    "[externalMetadata] Géneros:",
-    genres.length
-  );
-
-  console.log(
-    "[externalMetadata] Reparto:",
-    cast.length
-  );
-
-  console.log(
-    "[externalMetadata] Productoras:",
-    productionCompanies.length
-  );
-
-  console.log(
-    "[externalMetadata] Director:",
-    directors.length
-  );
-
-  console.log(
-    "[externalMetadata] Escritores:",
-    writers.length
-  );
-
-  console.log(
-    "[externalMetadata] IMDb:",
-    imdbRating || "N/D"
-  );
-
-  console.log(
-    "[externalMetadata] Network:",
-    network || "N/D"
-  );
-
-  return merged;
 }

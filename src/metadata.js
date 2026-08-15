@@ -1,12 +1,6 @@
 export async function getMetadata() {
   return {
-    id: "70787",
-
-    imdb_id: "tt0090407",
-
-    tmdb_id: "70787",
-
-    tmdbId: "70787",
+    id: "super-sentai-flashman",
     type: "series",
     name: "Choushinsei Flashman",
 
