@@ -823,7 +823,11 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
     network,
 
-    networks: navigableNetworks,
+    networks: navigableNetworks.map((x) => ({
+      name: x.name,
+      logo: x.logo,
+      tmdbId: x.tmdbId
+    })),
 
     /*
      * ========================================================
@@ -852,7 +856,11 @@ export async function mergeExternalMetadata(meta, imdbId) {
      * ========================================================
      */
 
-    productionCompanies: navigableProductionCompanies,
+    productionCompanies: navigableProductionCompanies.map((x) => ({
+      name: x.name,
+      logo: x.logo,
+      tmdbId: x.tmdbId
+    })),
 
     production_companies: navigableProductionCompanies,
 
