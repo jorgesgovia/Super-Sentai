@@ -2,13 +2,8 @@ import express from "express";
 import cors from "cors";
 
 import {
-  getMetadata,
-  getEpisodeMetadata
+  getMetadata
 } from "./src/metadata.js";
-
-import {
-  getStreams
-} from "./src/streams.js";
 
 const app =
   express();
@@ -49,25 +44,6 @@ function noCache(res) {
 
 }
 
-function parseEpisodeId(id) {
-
-  const match =
-    String(id).match(
-      /^70787:1:(\d+)$/
-    );
-
-  if (!match) {
-
-    return null;
-
-  }
-
-  return Number(
-    match[1]
-  );
-
-}
-
 /*
 ============================================================
 ROOT
@@ -94,6 +70,16 @@ app.get(
 /*
 ============================================================
 MANIFEST
+============================================================
+
+VOLVEMOS AL ESTADO ORIGINAL:
+
+SOLAMENTE SERIES.
+
+NO:
+episode
+videos
+episode metadata
 ============================================================
 */
 
@@ -203,17 +189,7 @@ app.get(
               metadata.imdb_id,
 
             /*
-             * 🔥 ENTIDADES NUVIO
-             */
-
-            networks:
-              metadata.networks,
-
-            productionCompanies:
-              metadata.productionCompanies,
-
-            /*
-             * Compatibilidad
+             * EXACTAMENTE COMO LOS QUEREMOS.
              */
 
             network:
@@ -250,6 +226,14 @@ app.get(
 ============================================================
 META SERIES
 ============================================================
+
+SIN videos[].
+
+SIN rutas especiales de episodios.
+
+ESTO NOS PERMITE COMPROBAR SI LOS EPISODIOS
+SON LOS QUE ESTÁN INTERFIRIENDO.
+============================================================
 */
 
 app.get(
@@ -269,7 +253,7 @@ app.get(
       );
 
       console.log(
-        " META SERIES"
+        " META SERIES — EXPERIMENTO 10"
       );
 
       console.log(
@@ -283,31 +267,18 @@ app.get(
 
       console.log(
         "Network:",
-        JSON.stringify(
-          metadata.networks
-        )
+        metadata.network
       );
 
       console.log(
         "Production:",
-        JSON.stringify(
-          metadata.productionCompanies
-        )
+        metadata.productionCompany
       );
 
       console.log(
         "Episodes:",
-        metadata.videos.length
+        "DESHABILITADOS PARA LA PRUEBA"
       );
-
-      /*
-       * 🔥 MUY IMPORTANTE:
-       *
-       * No reconstruimos la metadata.
-       *
-       * Entregamos el objeto completo para que Nuvio
-       * reciba networks + productionCompanies + videos.
-       */
 
       res.json({
 
@@ -320,67 +291,6 @@ app.get(
 
       console.error(
         "META SERIES ERROR:",
-        error
-      );
-
-      res.status(500).json({
-
-        meta: {}
-
-      });
-
-    }
-
-  }
-);
-
-/*
-============================================================
-META EPISODE
-============================================================
-*/
-
-app.get(
-  "/meta/episode/:id.json",
-  async (req, res) => {
-
-    try {
-
-      const number =
-        parseEpisodeId(
-          req.params.id
-        );
-
-      if (!number) {
-
-        return res.status(
-          404
-        ).json({
-
-          meta: {}
-
-        });
-
-      }
-
-      const metadata =
-        await getEpisodeMetadata(
-          number
-        );
-
-      noCache(res);
-
-      res.json({
-
-        meta:
-          metadata
-
-      });
-
-    } catch (error) {
-
-      console.error(
-        "META EPISODE ERROR:",
         error
       );
 
@@ -439,208 +349,21 @@ app.get(
 
 /*
 ============================================================
-STREAM
+IMPORTANTE
 ============================================================
-*/
 
-app.get(
-  "/stream/:type/:id.json",
-  async (req, res) => {
+NO CREAMOS:
 
-    try {
+/meta/episode/...
 
-      const requestedId =
-        req.params.id;
+NO CREAMOS:
 
-      console.log("");
-      console.log(
-        "======================================"
-      );
+videos[]
 
-      console.log(
-        " STREAM REQUEST"
-      );
+NO DECLARAMOS:
 
-      console.log(
-        "Type:",
-        req.params.type
-      );
+episode
 
-      console.log(
-        "ID:",
-        requestedId
-      );
-
-      console.log(
-        "======================================"
-      );
-
-      /*
-      ======================================================
-      EPISODIO
-      ======================================================
-      */
-
-      if (
-        requestedId.startsWith(
-          "70787:1:"
-        )
-      ) {
-
-        const streams =
-          await getStreams(
-            requestedId
-          );
-
-        return res.json({
-
-          streams:
-            Array.isArray(
-              streams
-            )
-              ? streams
-              : []
-
-        });
-
-      }
-
-      /*
-      ======================================================
-      SERIE
-      ======================================================
-      */
-
-      if (
-        requestedId ===
-        "70787"
-      ) {
-
-        const allStreams = [];
-
-        for (
-          let episode = 1;
-          episode <= 50;
-          episode++
-        ) {
-
-          const episodeId =
-            `70787:1:${episode}`;
-
-          try {
-
-            const streams =
-              await getStreams(
-                episodeId
-              );
-
-            if (
-              Array.isArray(
-                streams
-              ) &&
-              streams.length > 0
-            ) {
-
-              for (
-                const stream of streams
-              ) {
-
-                allStreams.push({
-
-                  ...stream,
-
-                  title:
-                    stream.title ||
-                    `Episodio ${episode}`,
-
-                  name:
-                    stream.name ||
-                    `Episodio ${episode}`,
-
-                  season:
-                    1,
-
-                  episode:
-                    episode,
-
-                  episodeId:
-                    episodeId
-
-                });
-
-              }
-
-            }
-
-          } catch (error) {
-
-            console.error(
-              "Episode stream error:",
-              episodeId,
-              error
-            );
-
-          }
-
-        }
-
-        console.log(
-          "TOTAL DRIVE STREAMS:",
-          allStreams.length
-        );
-
-        return res.json({
-
-          streams:
-            allStreams
-
-        });
-
-      }
-
-      /*
-      ======================================================
-      FALLBACK
-      ======================================================
-      */
-
-      const streams =
-        await getStreams(
-          requestedId
-        );
-
-      res.json({
-
-        streams:
-          Array.isArray(
-            streams
-          )
-            ? streams
-            : []
-
-      });
-
-    } catch (error) {
-
-      console.error(
-        "STREAM ERROR:",
-        error
-      );
-
-      res.json({
-
-        streams: []
-
-      });
-
-    }
-
-  }
-);
-
-/*
-============================================================
-START
 ============================================================
 */
 
@@ -650,12 +373,17 @@ app.listen(
   () => {
 
     console.log("");
+
     console.log(
       "======================================"
     );
 
     console.log(
       " Super Sentai Addon"
+    );
+
+    console.log(
+      " EXPERIMENTO 10"
     );
 
     console.log(
@@ -675,15 +403,7 @@ app.listen(
     );
 
     console.log(
-      " NETWORK ID: 103"
-    );
-
-    console.log(
       " NETWORK: TV Asahi"
-    );
-
-    console.log(
-      " PRODUCTION ID: 5822"
     );
 
     console.log(
@@ -691,11 +411,11 @@ app.listen(
     );
 
     console.log(
-      " EPISODES: 50"
+      " EPISODIOS: DESHABILITADOS"
     );
 
     console.log(
-      " STREAMS: Google Drive"
+      " STREAMS: DESHABILITADOS PARA LA PRUEBA"
     );
 
     console.log(
