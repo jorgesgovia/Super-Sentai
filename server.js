@@ -1,71 +1,39 @@
-const PORT = process.env.PORT || 7070;
-
-import "dotenv/config";
 import express from "express";
 import cors from "cors";
-
 import { getMetadata } from "./src/metadata.js";
 import { getStreams } from "./src/streams.js";
-import { getEpisodes } from "./src/episodes.js";
-import { mergeExternalMetadata } from "./src/externalMetadata.js";
 
 const app = express();
 
 app.use(cors());
+app.use(express.json());
 
+const PORT = process.env.PORT || 7070;
 
-/*
- * ============================================================
- * MANIFEST
- * ============================================================
- *
- * Cada recurso declara explícitamente el tipo que maneja.
- *
- * META:
- *   series + super-sentai-
- *
- * STREAM:
- *   series + super-sentai-
- *
- * Los episodios están dentro de meta.videos.
- * No se declara "episode" como tipo independiente.
- *
- * ============================================================
- */
+const ADDON_ID = "org.super-sentai.addon";
+const ADDON_NAME = "Super Sentai Addon";
 
-app.get("/manifest.json", (req, res) => {
-  return res.json({
-    id: "org.super-sentai.nuvio",
+app.get("/", (req, res) => {
+  res.json({
+    addon: ADDON_NAME,
+    status: "ok"
+  });
+});
+
+app.get("/manifest.json", async (req, res) => {
+  res.json({
+    id: ADDON_ID,
     version: "1.0.0",
-
-    name: "Super Sentai",
-
-    description:
-      "Series y episodios de Super Sentai para Nuvio",
-
+    name: ADDON_NAME,
+    description: "Super Sentai Addon para Nuvio",
     resources: [
-      {
-        name: "catalog",
-        types: ["series"]
-      },
-
-      {
-        name: "meta",
-        types: ["series"],
-        idPrefixes: ["super-sentai-"]
-      },
-
-      {
-        name: "stream",
-        types: ["series"],
-        idPrefixes: ["super-sentai-"]
-      }
+      "catalog",
+      "meta",
+      "stream"
     ],
-
     types: [
       "series"
     ],
-
     catalogs: [
       {
         type: "series",
@@ -76,461 +44,76 @@ app.get("/manifest.json", (req, res) => {
   });
 });
 
-
-/*
- * ============================================================
- * CATALOG
- * ============================================================
- */
-
 app.get("/catalog/:type/:id.json", async (req, res) => {
   try {
-    const { type, id } = req.params;
-
-    console.log(
-      "CATALOG PEDIDO:",
-      type,
-      id
-    );
-
-    if (
-      type !== "series" ||
-      id !== "super-sentai"
-    ) {
-      return res.json({
-        metas: []
-      });
-    }
-
     const metadata = await getMetadata();
 
-    const catalogMeta = {
-      id: metadata.id,
-      type: "series",
-      name: metadata.name,
-
-      poster: metadata.poster,
-      background: metadata.background,
-
-      description: metadata.description,
-
-      genres: metadata.genres,
-
-      year: metadata.year,
-
-      releaseInfo: metadata.releaseInfo
-    };
-
-    console.log(
-      "CATALOG ENVIADO:",
-      JSON.stringify({
-        id: catalogMeta.id,
-        type: catalogMeta.type,
-        name: catalogMeta.name
-      })
-    );
-
-    return res.json({
+    res.json({
       metas: [
-        catalogMeta
+        {
+          id: metadata.id,
+          type: metadata.type,
+          name: metadata.name,
+          poster: metadata.poster,
+          background: metadata.background,
+          description: metadata.description,
+          genres: metadata.genres,
+          year: metadata.year,
+          releaseInfo: metadata.releaseInfo
+        }
       ]
     });
-
   } catch (error) {
-    console.error(
-      "ERROR CATALOG:",
-      error
-    );
+    console.error("CATALOG ERROR:", error);
 
-    return res.status(500).json({
+    res.status(500).json({
       metas: []
     });
   }
 });
 
-
-/*
- * ============================================================
- * META
- * ============================================================
- */
-
 app.get("/meta/:type/:id.json", async (req, res) => {
   try {
-    const { type, id } = req.params;
-
-    console.log(
-      "META PEDIDA:",
-      type,
-      id
-    );
-
-    /*
-     * Solo aceptamos metadata de series.
-     */
-
-    if (type !== "series") {
-      return res.status(404).json({
-        meta: null
-      });
-    }
-
-    /*
-     * Solo nuestra serie.
-     */
-
-    if (
-      id !== "super-sentai-flashman" &&
-      id !== "super-sentai-flashman"
-    ) {
-      return res.status(404).json({
-        meta: null
-      });
-    }
-
-    /*
-     * Obtenemos nuestra metadata completa.
-     */
-
     const metadata = await getMetadata();
 
+    console.log("===== META REQUEST =====");
+    console.log("Requested:", req.params.id);
+    console.log("Returning:", metadata);
 
-    /*
-     * ========================================================
-     * VIDEOS
-     * ========================================================
-     *
-     * IMPORTANTE:
-     *
-     * El ID de cada video es:
-     *
-     * super-sentai-flashman:1:1
-     * super-sentai-flashman:1:2
-     * ...
-     *
-     * Ese mismo ID será utilizado posteriormente
-     * para solicitar el stream correspondiente.
-     *
-     * ========================================================
-     */
-
-    /*
-     * ========================================================
-     * EPISODIOS
-     * ========================================================
-     *
-     * TMDB proporciona la información del episodio:
-     *
-     * - título
-     * - descripción
-     * - fecha
-     * - thumbnail
-     * - duración
-     * - rating
-     *
-     * Pero NO usamos el ID TMDB para reproducir.
-     *
-     * Cada episodio recibe nuestro ID interno:
-     *
-     * super-sentai-flashman:1:1
-     * super-sentai-flashman:1:2
-     * ...
-     *
-     * De esta manera Nuvio puede mostrar la información de
-     * TMDB mientras /stream continúa resolviendo Google Drive.
-     * ========================================================
-     */
-
-    let tmdbEpisodes = [];
-
-    try {
-      tmdbEpisodes = await getEpisodes(
-        "super-sentai-flashman"
-      );
-
-      console.log(
-        "EPISODIOS TMDB OBTENIDOS:",
-        tmdbEpisodes.length
-      );
-    } catch (error) {
-      console.error(
-        "ERROR OBTENIENDO EPISODIOS TMDB:",
-        error.message
-      );
-    }
-
-    const videos = tmdbEpisodes.map(
-      (episode, index) => {
-
-        const episodeNumber =
-          Number(episode.episode) ||
-          index + 1;
-
-        return {
-          id:
-            `super-sentai-flashman:1:${episodeNumber}`,
-
-          title:
-            episode.title ||
-            `Episodio ${episodeNumber}`,
-
-          name:
-            episode.name ||
-            episode.title ||
-            `Episodio ${episodeNumber}`,
-
-          season: 1,
-
-          episode:
-            episodeNumber,
-
-          released:
-            episode.released ||
-            null,
-
-          thumbnail:
-            episode.thumbnail ||
-            metadata.background ||
-            metadata.poster,
-
-          overview:
-            episode.overview ||
-            episode.description ||
-            "",
-
-          description:
-            episode.description ||
-            episode.overview ||
-            "",
-
-          runtime:
-            episode.runtime ||
-            30,
-
-          rating:
-            episode.rating ||
-            null,
-
-          votes:
-            episode.votes ||
-            0,
-
-          imdbRating:
-            episode.imdbRating ||
-            episode.rating ||
-            null
-        };
+    res.json({
+      meta: {
+        ...metadata
       }
-    );
-
-    /*
-     * Construimos la metadata final.
-     *
-     * Conservamos toda la información de la serie
-     * generada en metadata.js.
-     *
-     * Solo sustituimos videos por la versión
-     * compatible con el flujo de Nuvio/Stremio.
-     */
-
-    /*
-     * ========================================================
-     * METADATA FINAL
-     * ========================================================
-     *
-     * Nuvio recibe nuestra metadata directamente.
-     *
-     * El ID público de la serie es super-sentai-flashman.
-     *
-     * La reproducción continúa utilizando nuestros IDs
-     * internos super-sentai-flashman:1:X.
-     * ========================================================
-     */
-
-    /*
-     * Conservamos nuestros videos personalizados.
-     */
-
-    const finalMeta = {
-      ...metadata,
-
-      /*
-       * El ID que Nuvio pidió debe coincidir con el ID público.
-       */
-      id: "super-sentai-flashman",
-
-      /*
-       * Nuestros episodios conservan IDs internos para Drive.
-       */
-      videos
-    };
-
-
-    console.log(
-      "META ENVIADA:",
-      JSON.stringify({
-        id:
-          finalMeta.id,
-
-        type:
-          finalMeta.type,
-
-        name:
-          finalMeta.name,
-
-        videos:
-          finalMeta.videos.length,
-
-        firstEpisode:
-          finalMeta.videos[0]?.id,
-
-        lastEpisode:
-          finalMeta.videos[
-            finalMeta.videos.length - 1
-          ]?.id
-      })
-    );
-
-
-    return res.json({
-      meta: finalMeta
     });
-
   } catch (error) {
+    console.error("META ERROR:", error);
 
-    console.error(
-      "ERROR META:",
-      error
-    );
-
-    return res.status(500).json({
-      error: error.message,
-      meta: null
+    res.status(500).json({
+      meta: {}
     });
   }
 });
 
-
-/*
- * ============================================================
- * STREAM
- * ============================================================
- *
- * Nuvio/Stremio debe solicitar:
- *
- * /stream/series/super-sentai-flashman:1:1.json
- *
- * /stream/series/super-sentai-flashman:1:2.json
- *
- * etc.
- *
- * getStreams() recibe ese ID completo y lo resuelve
- * contra Google Drive.
- *
- * ============================================================
- */
-
 app.get("/stream/:type/:id.json", async (req, res) => {
   try {
+    const streams = await getStreams(req.params.id);
 
-    const { type, id } =
-      req.params;
-
-    console.log(
-      "STREAM PEDIDO:",
-      type,
-      id
-    );
-
-
-    /*
-     * El recurso stream está declarado para series.
-     */
-
-    if (type !== "series") {
-
-      console.log(
-        "STREAM RECHAZADO - tipo:",
-        type
-      );
-
-      return res.json({
-        streams: []
-      });
-    }
-
-
-    /*
-     * Validamos que sea uno de nuestros IDs.
-     */
-
-    if (
-      !id.startsWith(
-        "super-sentai-flashman:"
-      )
-    ) {
-
-      console.log(
-        "STREAM RECHAZADO - ID:",
-        id
-      );
-
-      return res.json({
-        streams: []
-      });
-    }
-
-
-    /*
-     * Resolver episodio → Google Drive.
-     */
-
-    const streams =
-      await getStreams(id);
-
-
-    console.log(
-      "STREAM ENVIADO:",
-      JSON.stringify({
-        id,
-        streams: streams.length
-      })
-    );
-
-
-    return res.json({
-      streams
+    res.json({
+      streams: Array.isArray(streams) ? streams : []
     });
-
   } catch (error) {
+    console.error("STREAM ERROR:", error);
 
-    console.error(
-      "ERROR STREAM:",
-      error
-    );
-
-    return res.status(500).json({
-      error: error.message,
+    res.json({
       streams: []
     });
   }
 });
 
-
-/*
- * ============================================================
- * INICIO DEL SERVIDOR
- * ============================================================
- */
-
-app.listen(
-  PORT,
-  "0.0.0.0",
-  () => {
-
-    console.log(
-      `Super Sentai Addon ejecutándose en http://127.0.0.1:${PORT}`
-    );
-
-  }
-);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log("======================================");
+  console.log(" Super Sentai Addon");
+  console.log(" PORT:", PORT);
+  console.log(" STATUS: ONLINE");
+  console.log("======================================");
+});
