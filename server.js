@@ -1,23 +1,31 @@
 import express from "express";
 import cors from "cors";
+
 import {
   getMetadata,
   getEpisodeMetadata
 } from "./src/metadata.js";
 
-import { getStreams } from "./src/streams.js";
+import {
+  getStreams
+} from "./src/streams.js";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 7070;
+const PORT =
+  process.env.PORT || 7070;
 
-const ADDON_ID = "org.super-sentai.addon";
-const ADDON_NAME = "Super Sentai Addon";
+const ADDON_ID =
+  "org.super-sentai.addon";
 
-function jsonNoCache(res) {
+const ADDON_NAME =
+  "Super Sentai Addon";
+
+function noCache(res) {
+
   res.setHeader(
     "Cache-Control",
     "no-store, no-cache, must-revalidate, proxy-revalidate"
@@ -35,7 +43,11 @@ function jsonNoCache(res) {
 }
 
 function parseEpisodeId(id) {
-  const match = String(id).match(/^70787:1:(\d+)$/);
+
+  const match =
+    String(id).match(
+      /^70787:1:(\d+)$/
+    );
 
   if (!match) {
     return null;
@@ -44,44 +56,72 @@ function parseEpisodeId(id) {
   return Number(match[1]);
 }
 
+/*
+============================================================
+ROOT
+============================================================
+*/
+
 app.get("/", (req, res) => {
+
   res.json({
+
     addon: ADDON_NAME,
+
     status: "ok"
+
   });
+
 });
 
-app.get("/manifest.json", (req, res) => {
-  res.json({
-    id: ADDON_ID,
+/*
+============================================================
+MANIFEST
+============================================================
+*/
 
-    version: "1.0.0",
+app.get(
+  "/manifest.json",
+  (req, res) => {
 
-    name: ADDON_NAME,
+    res.json({
 
-    description:
-      "Super Sentai Addon para Nuvio",
+      id: ADDON_ID,
 
-    resources: [
-      "catalog",
-      "meta",
-      "stream"
-    ],
+      version: "1.0.0",
 
-    types: [
-      "series",
-      "episode"
-    ],
+      name: ADDON_NAME,
 
-    catalogs: [
-      {
-        type: "series",
-        id: "super-sentai",
-        name: "Super Sentai"
-      }
-    ]
-  });
-});
+      description:
+        "Super Sentai Addon para Nuvio",
+
+      resources: [
+        "catalog",
+        "meta",
+        "stream"
+      ],
+
+      types: [
+        "series",
+        "episode"
+      ],
+
+      catalogs: [
+
+        {
+          type: "series",
+
+          id: "super-sentai",
+
+          name: "Super Sentai"
+        }
+
+      ]
+
+    });
+
+  }
+);
 
 /*
 ============================================================
@@ -92,42 +132,93 @@ CATALOG
 app.get(
   "/catalog/:type/:id.json",
   async (req, res) => {
-    try {
-      const metadata = await getMetadata();
 
-      jsonNoCache(res);
+    try {
+
+      const metadata =
+        await getMetadata();
+
+      noCache(res);
 
       res.json({
+
         metas: [
+
           {
+
             id: metadata.id,
 
             type: "series",
 
             name: metadata.name,
 
-            poster: metadata.poster,
+            poster:
+              metadata.poster,
 
-            background: metadata.background,
+            background:
+              metadata.background,
 
-            description: metadata.description,
+            description:
+              metadata.description,
 
-            genres: metadata.genres,
+            genres:
+              metadata.genres,
 
-            year: metadata.year,
+            year:
+              metadata.year,
 
-            releaseInfo: metadata.releaseInfo,
+            releaseInfo:
+              metadata.releaseInfo,
 
-            released: metadata.released,
+            released:
+              metadata.released,
 
-            imdb_id: metadata.imdb_id,
+            imdb_id:
+              metadata.imdb_id,
 
-            network: metadata.network,
+            /*
+             * NETWORK
+             */
+            network:
+              metadata.network,
 
+            originalNetwork:
+              metadata.originalNetwork,
+
+            original_network:
+              metadata.original_network,
+
+            networks:
+              metadata.networks,
+
+            originalNetworks:
+              metadata.originalNetworks,
+
+            original_networks:
+              metadata.original_networks,
+
+            /*
+             * PRODUCTION
+             */
             productionCompany:
-              metadata.productionCompany
+              metadata.productionCompany,
+
+            production_company:
+              metadata.production_company,
+
+            productionCompanies:
+              metadata.productionCompanies,
+
+            production_companies:
+              metadata.production_companies,
+
+            production:
+              metadata.production
+
           }
+
         ]
+
       });
 
     } catch (error) {
@@ -140,13 +231,15 @@ app.get(
       res.status(500).json({
         metas: []
       });
+
     }
+
   }
 );
 
 /*
 ============================================================
-META — SERIE
+META — SERIES
 ============================================================
 */
 
@@ -159,15 +252,17 @@ app.get(
       const metadata =
         await getMetadata();
 
-      jsonNoCache(res);
+      noCache(res);
 
       console.log("");
       console.log(
         "======================================"
       );
+
       console.log(
         " META SERIES"
       );
+
       console.log(
         "======================================"
       );
@@ -178,12 +273,36 @@ app.get(
       );
 
       console.log(
-        "Videos:",
+        "Series:",
+        metadata.name
+      );
+
+      console.log(
+        "Network:",
+        metadata.network
+      );
+
+      console.log(
+        "Production:",
+        metadata.productionCompany
+      );
+
+      console.log(
+        "Episodes:",
         metadata.videos.length
       );
 
+      /*
+       * MUY IMPORTANTE:
+       *
+       * No reconstruimos la respuesta.
+       * Entregamos exactamente la metadata.
+       */
+
       res.json({
+
         meta: metadata
+
       });
 
     } catch (error) {
@@ -196,13 +315,15 @@ app.get(
       res.status(500).json({
         meta: {}
       });
+
     }
+
   }
 );
 
 /*
 ============================================================
-META — EPISODIO INDIVIDUAL
+META — EPISODE
 ============================================================
 */
 
@@ -212,10 +333,12 @@ app.get(
 
     try {
 
-      const episode =
-        parseEpisodeId(req.params.id);
+      const number =
+        parseEpisodeId(
+          req.params.id
+        );
 
-      if (!episode) {
+      if (!number) {
 
         return res.status(404).json({
           meta: {}
@@ -225,36 +348,20 @@ app.get(
 
       const metadata =
         await getEpisodeMetadata(
-          episode
+          number
         );
 
-      jsonNoCache(res);
-
-      console.log("");
-      console.log(
-        "======================================"
-      );
+      noCache(res);
 
       console.log(
-        " META EPISODE"
-      );
-
-      console.log(
-        "Episode:",
-        episode
-      );
-
-      console.log(
-        "ID:",
+        "Episode metadata:",
         req.params.id
       );
 
-      console.log(
-        "======================================"
-      );
-
       res.json({
+
         meta: metadata
+
       });
 
     } catch (error) {
@@ -267,13 +374,15 @@ app.get(
       res.status(500).json({
         meta: {}
       });
+
     }
+
   }
 );
 
 /*
 ============================================================
-META — FALLBACK GENERAL
+META FALLBACK
 ============================================================
 */
 
@@ -286,10 +395,12 @@ app.get(
       const metadata =
         await getMetadata();
 
-      jsonNoCache(res);
+      noCache(res);
 
       res.json({
+
         meta: metadata
+
       });
 
     } catch (error) {
@@ -302,13 +413,15 @@ app.get(
       res.status(500).json({
         meta: {}
       });
+
     }
+
   }
 );
 
 /*
 ============================================================
-STREAM — EPISODIO
+STREAM
 ============================================================
 */
 
@@ -345,10 +458,8 @@ app.get(
       );
 
       /*
-      --------------------------------------
-      EPISODIO INDIVIDUAL
-      --------------------------------------
-      */
+       * EPISODIO
+       */
 
       if (
         requestedId.startsWith(
@@ -361,33 +472,31 @@ app.get(
             requestedId
           );
 
-        console.log(
-          "Episode streams:",
-          Array.isArray(streams)
-            ? streams.length
-            : 0
-        );
-
         return res.json({
+
           streams:
             Array.isArray(streams)
               ? streams
               : []
+
         });
+
       }
 
       /*
-      --------------------------------------
-      SERIE COMPLETA
-      --------------------------------------
-      */
+       * SERIE
+       *
+       * Conservamos exactamente
+       * la solución que consiguió
+       * mostrar los capítulos de Drive.
+       */
 
       if (
         requestedId === "70787"
       ) {
 
         console.log(
-          "SERIES FALLBACK"
+          "SERIES STREAM FALLBACK"
         );
 
         const allStreams = [];
@@ -398,17 +507,19 @@ app.get(
           episode++
         ) {
 
-          const id =
+          const episodeId =
             `70787:1:${episode}`;
 
           try {
 
             const streams =
-              await getStreams(id);
+              await getStreams(
+                episodeId
+              );
 
             if (
               Array.isArray(streams) &&
-              streams.length
+              streams.length > 0
             ) {
 
               for (
@@ -416,6 +527,7 @@ app.get(
               ) {
 
                 allStreams.push({
+
                   ...stream,
 
                   title:
@@ -430,7 +542,8 @@ app.get(
 
                   episode,
 
-                  episodeId: id
+                  episodeId
+
                 });
 
               }
@@ -440,28 +553,32 @@ app.get(
           } catch (error) {
 
             console.error(
-              "Episode stream error:",
-              id,
+              "Episode error:",
+              episodeId,
               error
             );
+
           }
+
         }
 
         console.log(
-          "TOTAL STREAMS:",
+          "TOTAL DRIVE STREAMS:",
           allStreams.length
         );
 
         return res.json({
-          streams: allStreams
+
+          streams:
+            allStreams
+
         });
+
       }
 
       /*
-      --------------------------------------
-      FALLBACK
-      --------------------------------------
-      */
+       * FALLBACK
+       */
 
       const streams =
         await getStreams(
@@ -469,10 +586,12 @@ app.get(
         );
 
       res.json({
+
         streams:
           Array.isArray(streams)
             ? streams
             : []
+
       });
 
     } catch (error) {
@@ -483,11 +602,21 @@ app.get(
       );
 
       res.json({
+
         streams: []
+
       });
+
     }
+
   }
 );
+
+/*
+============================================================
+START
+============================================================
+*/
 
 app.listen(
   PORT,
@@ -495,6 +624,7 @@ app.listen(
   () => {
 
     console.log("");
+
     console.log(
       "======================================"
     );
@@ -512,7 +642,7 @@ app.listen(
     );
 
     console.log(
-      " SERIES ID: 70787"
+      " ID: 70787"
     );
 
     console.log(
@@ -538,5 +668,6 @@ app.listen(
     console.log(
       "======================================"
     );
+
   }
 );
