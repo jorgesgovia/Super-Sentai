@@ -1,106 +1,73 @@
+import {
+  extractDriveEpisodes
+} from "./drive.js";
+
+
 /*
 ============================================================
-SUPER SENTAI ADDON
 EPISODES.JS
 
-ARCHIVO INDEPENDIENTE DE METADATA.
+Fuente REAL:
 
-Aquí vive exclusivamente la información de episodios.
+Google Drive
 
-NO modifica metadata.js.
-NO modifica streams.js.
+NO se escriben manualmente los 50 episodios.
 
-TMDB:
-70787
+drive.js descubre:
 
-SERIE:
-Choushinsei Flashman
-
-============================================================
-*/
-
-
-const EPISODE_COUNT =
-  50;
-
-
-/*
-============================================================
-GENERADOR DE EPISODIOS
-============================================================
-
-De momento no inventamos títulos ni sinopsis.
-
-El objetivo de este archivo es separar completamente
-la estructura episódica de metadata.js.
-
-Los datos reales pueden incorporarse después mediante
-TMDB/Wikidata/u otra fuente.
+episode
+filename
+fileId
 
 ============================================================
 */
 
-export function getEpisodes() {
 
-  const episodes = [];
+export async function getEpisodes() {
 
-
-  for (
-    let episode = 1;
-    episode <= EPISODE_COUNT;
-    episode++
-  ) {
-
-    episodes.push({
-
-      id:
-        `70787:1:${episode}`,
-
-      type:
-        "series",
-
-      name:
-        `Choushinsei Flashman ${episode}`,
-
-      season:
-        1,
-
-      episode:
-
-        episode
-
-    });
-
-  }
+  const driveEpisodes =
+    await extractDriveEpisodes();
 
 
-  return episodes;
+  return driveEpisodes
+    .sort(
+      (a, b) =>
+        a.episode - b.episode
+    )
+    .map(
+      (video) => ({
+
+        id:
+          `70787:1:${video.episode}`,
+
+        title:
+          `Episodio ${video.episode}`,
+
+        season:
+          1,
+
+        episode:
+          video.episode,
+
+        overview:
+          `Choushinsei Flashman — Episodio ${video.episode}`,
+
+        thumbnail:
+          "https://image.tmdb.org/t/p/original/wyGFaD0V2bU2Q5uEtJDStZSRoG2.jpg"
+
+      })
+    );
 
 }
 
 
-/*
-============================================================
-EPISODIO INDIVIDUAL
-============================================================
-*/
-
-export function getEpisode(
+export async function getEpisode(
   season,
   episode
 ) {
 
-  const s =
-    Number(season);
-
-  const e =
-    Number(episode);
-
-
   if (
-    s !== 1 ||
-    e < 1 ||
-    e > EPISODE_COUNT
+    Number(season) !== 1
   ) {
 
     return null;
@@ -108,23 +75,16 @@ export function getEpisode(
   }
 
 
-  return {
+  const episodes =
+    await getEpisodes();
 
-    id:
-      `70787:${s}:${e}`,
 
-    type:
-      "series",
-
-    name:
-      `Choushinsei Flashman ${e}`,
-
-    season:
-      s,
-
-    episode:
-      e
-
-  };
+  return (
+    episodes.find(
+      (x) =>
+        x.episode ===
+        Number(episode)
+    ) || null
+  );
 
 }

@@ -69,7 +69,7 @@ app.get(
         true,
 
       episodes:
-        "separate"
+        "drive"
 
     });
 
@@ -142,10 +142,6 @@ app.get(
 ============================================================
 CATALOG
 ============================================================
-
-NO episodios aquí.
-
-============================================================
 */
 
 app.get(
@@ -205,22 +201,22 @@ app.get(
 META
 ============================================================
 
-Mantenemos exactamente la estructura que actualmente
-permite:
+Metadata actual:
 
-✓ detectar serie
-✓ Red
-✓ Producción
-✓ background
+✓ TMDB
 ✓ IMDb rating
-
-Agregamos:
-
+✓ background
 ✓ poster
 ✓ logo
 ✓ trailer
 
-NO videos[].
+Y AHORA:
+
+✓ videos desde Drive
+
+IMPORTANTE:
+
+Los episodios NO se construyen en metadata.js.
 
 ============================================================
 */
@@ -241,7 +237,7 @@ app.get(
       );
 
       console.log(
-        " META"
+        " META SERIES"
       );
 
       console.log(
@@ -249,7 +245,7 @@ app.get(
       );
 
       console.log(
-        "REQUESTED:",
+        "ID:",
         req.params.id
       );
 
@@ -259,65 +255,106 @@ app.get(
       );
 
       console.log(
-        "IMDb rating:",
-        metadata.imdbRating
+        "Network:",
+        "EXTERNAL"
       );
 
       console.log(
-        "Background:",
-        metadata.background
+        "Production:",
+        "EXTERNAL"
       );
 
-      console.log(
-        "Poster:",
-        metadata.poster
-      );
 
-      console.log(
-        "Logo:",
-        metadata.logo
-      );
+      /*
+       * Obtener episodios directamente desde Drive
+       */
 
-      console.log(
-        "Trailer:",
-        metadata.trailer
-      );
+      let videos = [];
 
-      console.log(
-        "VIDEOS:",
-        "NO"
-      );
+
+      try {
+
+        videos =
+          await getEpisodes();
+
+
+        console.log(
+          "VIDEOS EN META:",
+          videos.length
+        );
+
+
+      } catch (episodeError) {
+
+        console.error(
+          "EPISODE DISCOVERY ERROR:",
+          episodeError
+        );
+
+        videos = [];
+
+      }
+
+
+      /*
+       * Metadata base
+       */
+
+      const meta = {
+
+        id:
+          metadata.id,
+
+        type:
+          metadata.type,
+
+        name:
+          metadata.name,
+
+        imdbRating:
+          metadata.imdbRating,
+
+        background:
+          metadata.background,
+
+        poster:
+          metadata.poster,
+
+        logo:
+          metadata.logo,
+
+        trailer:
+          metadata.trailer
+
+      };
+
+
+      /*
+       * ====================================================
+       * EPISODIOS
+       * ====================================================
+       *
+       * Solo agregamos videos si Drive realmente encontró
+       * episodios.
+       *
+       * Así evitamos enviar una lista vacía.
+       *
+       * ====================================================
+       */
+
+      if (
+        videos.length > 0
+      ) {
+
+        meta.videos =
+          videos;
+
+      }
 
 
       res.json({
 
-        meta: {
-
-          id:
-            metadata.id,
-
-          type:
-            metadata.type,
-
-          name:
-            metadata.name,
-
-          imdbRating:
-            metadata.imdbRating,
-
-          background:
-            metadata.background,
-
-          poster:
-            metadata.poster,
-
-          logo:
-            metadata.logo,
-
-          trailer:
-            metadata.trailer
-
-        }
+        meta
 
       });
 
@@ -344,17 +381,12 @@ app.get(
 
 /*
 ============================================================
-EPISODES — ENDPOINT SEPARADO
+EPISODES ENDPOINT
 ============================================================
 
-IMPORTANTE:
+Se conserva para pruebas.
 
-Este endpoint NO se declara como resource del manifest.
-
-Por lo tanto NO debería alterar la interfaz actual de Nuvio.
-
-Lo utilizamos para comprobar y depurar nuestra estructura
-episódica independientemente de metadata.
+Nuvio no necesariamente lo consume.
 
 ============================================================
 */
@@ -393,16 +425,12 @@ app.get(
       );
 
 
-      /*
-       * Serie completa
-       */
-
       if (
         id === "70787"
       ) {
 
         const episodes =
-          getEpisodes();
+          await getEpisodes();
 
 
         console.log(
@@ -420,12 +448,6 @@ app.get(
       }
 
 
-      /*
-       * Episodio individual
-       *
-       * 70787:1:23
-       */
-
       const match =
         id.match(
           /^70787:(\d+):(\d+)$/
@@ -435,7 +457,7 @@ app.get(
       if (match) {
 
         const episode =
-          getEpisode(
+          await getEpisode(
             Number(match[1]),
             Number(match[2])
           );
@@ -485,17 +507,22 @@ app.get(
 STREAM
 ============================================================
 
-NO MODIFICAMOS streams.js.
+Aquí recuperamos la lógica del experimento:
 
-Aceptamos:
+"fallback series streams through episode ids"
 
-70787:1:N
+Cuando Nuvio pide:
 
-y:
+/stream/series/70787.json
 
-tt0090407:1:N
+generamos:
 
-El segundo únicamente como compatibilidad.
+70787:1:1
+70787:1:2
+70787:1:3
+...
+
+y consultamos cada episodio.
 
 ============================================================
 */
@@ -508,10 +535,6 @@ app.get(
 
       const requestedId =
         req.params.id;
-
-
-      let internalId =
-        requestedId;
 
 
       console.log("");
@@ -528,14 +551,136 @@ app.get(
       );
 
       console.log(
-        "TYPE:",
+        "Type:",
         req.params.type
       );
 
       console.log(
-        "REQUESTED:",
+        "Requested ID:",
         requestedId
       );
+
+
+      /*
+       * ====================================================
+       * FALLBACK DE SERIE
+       * ====================================================
+       */
+
+      if (
+        req.params.type === "series" &&
+        requestedId === "70787"
+      ) {
+
+        console.log(
+          "SERIES REQUEST DETECTED"
+        );
+
+        console.log(
+          "Buscando streams de los episodios reales de Drive..."
+        );
+
+
+        const episodes =
+          await getEpisodes();
+
+
+        console.log(
+          "EPISODIOS DRIVE:",
+          episodes.length
+        );
+
+
+        const streams = [];
+
+
+        for (
+          const episode
+          of episodes
+        ) {
+
+          const episodeId =
+            episode.id;
+
+
+          console.log(
+            "Consultando:",
+            episodeId
+          );
+
+
+          const result =
+            await getStreams(
+              episodeId
+            );
+
+
+          if (
+            Array.isArray(result) &&
+            result.length > 0
+          ) {
+
+            console.log(
+              "ENCONTRADOS:",
+              episodeId,
+              result.length
+            );
+
+
+            for (
+              const stream
+              of result
+            ) {
+
+              streams.push({
+
+                ...stream,
+
+                title:
+                  `Episodio ${episode.episode} • Google Drive`,
+
+                name:
+                  "Google Drive"
+
+              });
+
+            }
+
+          } else {
+
+            console.log(
+              "SIN STREAM:",
+              episodeId
+            );
+
+          }
+
+        }
+
+
+        console.log(
+          "TOTAL STREAMS:",
+          streams.length
+        );
+
+
+        return res.json({
+
+          streams
+
+        });
+
+      }
+
+
+      /*
+       * ====================================================
+       * EPISODIO INDIVIDUAL
+       * ====================================================
+       */
+
+      let internalId =
+        requestedId;
 
 
       /*
@@ -621,10 +766,6 @@ app.get(
       }
 
 
-      /*
-       * Drive
-       */
-
       const streams =
         await getStreams(
           internalId
@@ -691,7 +832,7 @@ app.listen(
     );
 
     console.log(
-      " EXPERIMENTO 17"
+      " EXPERIMENTO 18"
     );
 
     console.log(
@@ -727,15 +868,15 @@ app.listen(
     );
 
     console.log(
-      "EPISODES: SEPARATE FILE"
+      "EPISODES: DRIVE"
     );
 
     console.log(
-      "EPISODES IN META: NO"
+      "SERIES STREAM FALLBACK: ENABLED"
     );
 
     console.log(
-      "STREAMS: GOOGLE DRIVE"
+      "STREAM SOURCE: GOOGLE DRIVE"
     );
 
     console.log(
