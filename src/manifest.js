@@ -22,6 +22,6 @@ export const manifest = {
   ],
   idPrefixes: [
     "super-sentai-",
-    "70787", "tt0090407"
+    "70787"
   ]
 };
