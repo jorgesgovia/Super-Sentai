@@ -1,51 +1,24 @@
-const TOTAL_EPISODES = 50;
+/*
+============================================================
+SUPER SENTAI ADDON
+EXPERIMENTO 14
 
-const IMDB_ID = "tt0090407";
+IMPORTANTE:
 
-function createEpisode(number) {
+NO generamos videos[].
+NO generamos episodios.
+NO fabricamos títulos de episodios.
 
-  return {
+La idea es que Nuvio/Cinemeta/IMDb/TMDB haga
+el enriquecimiento de la serie utilizando:
 
-    /*
-     * IMPORTANTE:
-     *
-     * Nuvio/Stremio reconoce naturalmente este patrón
-     * para episodios de series.
-     */
+    tt0090407
 
-    id:
-      `${IMDB_ID}:1:${number}`,
-
-    title:
-      `Episodio ${number}`,
-
-    season:
-      1,
-
-    episode:
-      number,
-
-    overview:
-      `Choushinsei Flashman — Episodio ${number}. Los Flashman continúan enfrentando al Imperio Mess y protegiendo la Tierra.`,
-
-    released:
-      "1986-03-01"
-
-  };
-
-}
-
-function createEpisodes() {
-
-  return Array.from(
-    {
-      length: TOTAL_EPISODES
-    },
-    (_, index) =>
-      createEpisode(index + 1)
-  );
-
-}
+Nuestro addon solamente conserva la metadata mínima
+necesaria para identificar la serie y las propiedades
+que ya comprobamos que Nuvio puede navegar.
+============================================================
+*/
 
 export async function getMetadata() {
 
@@ -53,12 +26,17 @@ export async function getMetadata() {
 
     /*
      * ======================================================
-     * SERIE
+     * LLAVE IMDb
      * ======================================================
+     *
+     * Esta es la prueba importante.
+     *
+     * Anteriormente comprobamos que utilizar el IMDb ID
+     * hacía que Nuvio reconociera/enriqueciera la serie.
      */
 
     id:
-      "70787",
+      "tt0090407",
 
     type:
       "series",
@@ -66,53 +44,20 @@ export async function getMetadata() {
     name:
       "Choushinsei Flashman",
 
-    /*
-     * LLAVE IMDb
-     */
-
     imdb_id:
-      IMDB_ID,
-
-    year:
-      1986,
-
-    releaseInfo:
-      "1986-1987",
-
-    released:
-      "1986-03-01",
-
-    genres: [
-      "Action",
-      "Adventure",
-      "Science Fiction"
-    ],
+      "tt0090407",
 
     /*
      * ======================================================
-     * NO TOCAR
+     * METADATA QUE YA SABEMOS QUE NUVIO PUEDE NAVEGAR
      * ======================================================
-     *
-     * Sabemos que así Nuvio los hace navegables.
      */
 
     network:
       "TV Asahi",
 
     productionCompany:
-      "Toei Company",
-
-    description:
-      "Choushinsei Flashman es una serie japonesa de Super Sentai producida por Toei Company y transmitida por TV Asahi entre 1986 y 1987.",
-
-    /*
-     * ======================================================
-     * EPISODIOS
-     * ======================================================
-     */
-
-    videos:
-      createEpisodes()
+      "Toei Company"
 
   };
 

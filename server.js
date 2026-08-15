@@ -9,25 +9,32 @@ import {
   getStreams
 } from "./src/streams.js";
 
+
 const app =
   express();
+
 
 app.use(
   cors()
 );
 
+
 app.use(
   express.json()
 );
 
+
 const PORT =
   process.env.PORT || 7070;
+
 
 const ADDON_ID =
   "org.super-sentai.addon";
 
+
 const ADDON_NAME =
   "Super Sentai Addon";
+
 
 function noCache(res) {
 
@@ -47,6 +54,7 @@ function noCache(res) {
   );
 
 }
+
 
 /*
 ============================================================
@@ -132,6 +140,14 @@ app.get(
 ============================================================
 CATALOG
 ============================================================
+
+IMPORTANTE:
+
+El catálogo tampoco genera episodios.
+
+Solo presenta la serie.
+
+============================================================
 */
 
 app.get(
@@ -159,27 +175,6 @@ app.get(
 
             name:
               metadata.name,
-
-            poster:
-              metadata.poster,
-
-            background:
-              metadata.background,
-
-            description:
-              metadata.description,
-
-            genres:
-              metadata.genres,
-
-            year:
-              metadata.year,
-
-            releaseInfo:
-              metadata.releaseInfo,
-
-            released:
-              metadata.released,
 
             imdb_id:
               metadata.imdb_id,
@@ -217,7 +212,18 @@ app.get(
 
 /*
 ============================================================
-META
+META SERIES
+============================================================
+
+MUY IMPORTANTE:
+
+NO videos[]
+NO episodios
+NO season/episode manuales
+
+La respuesta queda limpia para que Nuvio pueda
+hacer su propio enriquecimiento.
+
 ============================================================
 */
 
@@ -238,7 +244,7 @@ app.get(
       );
 
       console.log(
-        " META SERIES — EXPERIMENTO 13"
+        " META SERIES — EXPERIMENTO 14"
       );
 
       console.log(
@@ -246,8 +252,18 @@ app.get(
       );
 
       console.log(
-        "ID:",
+        "Requested:",
         req.params.id
+      );
+
+      console.log(
+        "Returning ID:",
+        metadata.id
+      );
+
+      console.log(
+        "IMDb:",
+        metadata.imdb_id
       );
 
       console.log(
@@ -261,18 +277,8 @@ app.get(
       );
 
       console.log(
-        "IMDb:",
-        metadata.imdb_id
-      );
-
-      console.log(
-        "Videos:",
-        metadata.videos.length
-      );
-
-      console.log(
-        "Video 1:",
-        metadata.videos[0].id
+        "VIDEOS:",
+        "NO"
       );
 
       res.json({
@@ -305,6 +311,15 @@ app.get(
 ============================================================
 META FALLBACK
 ============================================================
+
+También mantenemos la ruta genérica porque algunos clientes
+pueden solicitar:
+
+/meta/series/tt0090407.json
+
+o mediante otra combinación de parámetros.
+
+============================================================
 */
 
 app.get(
@@ -317,6 +332,21 @@ app.get(
         await getMetadata();
 
       noCache(res);
+
+      console.log("");
+      console.log(
+        "META FALLBACK"
+      );
+
+      console.log(
+        "TYPE:",
+        req.params.type
+      );
+
+      console.log(
+        "ID:",
+        req.params.id
+      );
 
       res.json({
 
@@ -346,17 +376,27 @@ app.get(
 
 /*
 ============================================================
-STREAM
+STREAM BRIDGE
 ============================================================
 
-ACEPTAMOS DOS FORMATOS:
+Nuvio puede pedir:
 
-70787:1:N
+tt0090407:1:1
+tt0090407:1:2
+tt0090407:1:3
+...
 
-tt0090407:1:N
+Pero tu sistema actual de Drive utiliza:
 
-Y AMBOS TERMINAN EN EL MISMO
-STREAM DE GOOGLE DRIVE.
+70787:1:1
+70787:1:2
+70787:1:3
+...
+
+Por eso hacemos una traducción INTERNA.
+
+Nuvio nunca necesita saber que usamos 70787 internamente.
+
 ============================================================
 */
 
@@ -366,8 +406,12 @@ app.get(
 
     try {
 
-      let requestedId =
+      const originalId =
         req.params.id;
+
+      let internalId =
+        originalId;
+
 
       console.log("");
       console.log(
@@ -388,94 +432,110 @@ app.get(
       );
 
       console.log(
-        "REQUESTED:",
-        requestedId
+        "REQUESTED ID:",
+        originalId
       );
 
 
       /*
        * ====================================================
-       * IMDb episode ID
+       * IMDb → Drive
        * ====================================================
        */
 
-      const imdbMatch =
-        requestedId.match(
-          /^tt0090407:1:(\d+)$/
+      const imdbEpisode =
+        originalId.match(
+          /^tt0090407:(\d+):(\d+)$/
         );
 
-      if (imdbMatch) {
+
+      if (imdbEpisode) {
+
+        const season =
+          Number(
+            imdbEpisode[1]
+          );
 
         const episode =
           Number(
-            imdbMatch[1]
+            imdbEpisode[2]
           );
 
-        const driveId =
-          `70787:1:${episode}`;
+
+        /*
+         * Actualmente nuestros archivos están
+         * identificados internamente como:
+
+         * 70787:temporada:episodio
+         */
+
+        internalId =
+          `70787:${season}:${episode}`;
+
 
         console.log(
-          "IMDb EPISODE:",
-          requestedId
+          "IMDb ID DETECTADO"
         );
 
         console.log(
-          "DRIVE ID:",
-          driveId
+          "SEASON:",
+          season
         );
 
-        requestedId =
-          driveId;
+        console.log(
+          "EPISODE:",
+          episode
+        );
+
+        console.log(
+          "INTERNAL DRIVE ID:",
+          internalId
+        );
 
       }
 
 
       /*
        * ====================================================
-       * DRIVE EPISODE ID
+       * TAMBIÉN ACEPTAMOS EL ID ANTIGUO
        * ====================================================
        */
 
       if (
-        /^70787:1:\d+$/.test(
-          requestedId
+        /^70787:\d+:\d+$/.test(
+          originalId
         )
       ) {
 
-        const streams =
-          await getStreams(
-            requestedId
-          );
+        internalId =
+          originalId;
 
         console.log(
-          "STREAMS:",
-          Array.isArray(streams)
-            ? streams.length
-            : 0
+          "LEGACY DRIVE ID DETECTADO"
         );
-
-        return res.json({
-
-          streams:
-            Array.isArray(streams)
-              ? streams
-              : []
-
-        });
 
       }
 
 
       /*
        * ====================================================
-       * SERIE
+       * LLAMADA A TU STREAMS.JS
        * ====================================================
        */
 
       const streams =
         await getStreams(
-          requestedId
+          internalId
         );
+
+
+      console.log(
+        "STREAMS ENCONTRADOS:",
+        Array.isArray(streams)
+          ? streams.length
+          : 0
+      );
+
 
       res.json({
 
@@ -486,12 +546,14 @@ app.get(
 
       });
 
+
     } catch (error) {
 
       console.error(
         "STREAM ERROR:",
         error
       );
+
 
       res.json({
 
@@ -507,7 +569,7 @@ app.get(
 
 /*
 ============================================================
-START
+SERVER
 ============================================================
 */
 
@@ -527,7 +589,7 @@ app.listen(
     );
 
     console.log(
-      " EXPERIMENTO 13"
+      " EXPERIMENTO 14"
     );
 
     console.log(
@@ -539,11 +601,11 @@ app.listen(
     );
 
     console.log(
-      " ID: 70787"
+      " IMDb: tt0090407"
     );
 
     console.log(
-      " IMDb: tt0090407"
+      " INTERNAL ID: 70787"
     );
 
     console.log(
@@ -555,11 +617,15 @@ app.listen(
     );
 
     console.log(
-      " EPISODES: IMDb IDs"
+      " VIDEOS EN META: NO"
     );
 
     console.log(
-      " STREAMS: Google Drive"
+      " EPISODES: EXTERNOS"
+    );
+
+    console.log(
+      " STREAM BRIDGE: IMDb → Drive"
     );
 
     console.log(
