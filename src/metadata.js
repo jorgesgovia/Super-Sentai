@@ -1,24 +1,27 @@
 /*
  * SUPER SENTAI ADDON
  *
- * STREAM ONLY
+ * TMDB ONLY
  *
- * NO metadata personalizada.
- * NO videos[].
- * NO episodios.
- * NO posters.
- * NO backgrounds.
- * NO sinopsis.
- * NO network.
- * NO productionCompany.
+ * NO IMDb
+ * NO videos[]
+ * NO episodios manuales
+ * NO metadata personalizada
+ * NO network
+ * NO productionCompany
+ * NO poster
+ * NO background
+ * NO description
  *
- * El identificador IMDb es la única referencia de contenido.
+ * ÚNICO IDENTIFICADOR:
+ *
+ * TMDB TV ID = 70787
  */
 
 export async function getMetadata() {
 
   return {
-    id: "tt0090407",
+    id: "70787",
     type: "series"
   };
 

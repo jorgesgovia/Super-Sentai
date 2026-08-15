@@ -48,7 +48,13 @@ app.get(
         ADDON_NAME,
 
       status:
-        "ok"
+        "ok",
+
+      source:
+        "TMDB",
+
+      tmdb_id:
+        "70787"
 
     });
 
@@ -61,11 +67,13 @@ app.get(
 MANIFEST
 ============================================================
 
-La única función del addon es proporcionar streams.
+El addon NO ofrece metadata.
 
-No declaramos catalog ni meta.
+El identificador del contenido es TMDB:
 
-La metadata debe venir de Nuvio/Cinemeta.
+70787
+
+La función principal es STREAM.
 
 ============================================================
 */
@@ -107,24 +115,14 @@ app.get(
 STREAM
 ============================================================
 
-Aceptamos:
-
-tt0090407:1:1
-tt0090407:1:2
-tt0090407:1:3
-...
-
-y también el identificador interno:
+TMDB:
 
 70787:1:1
 70787:1:2
 70787:1:3
+...
 
-Nuvio utiliza IMDb.
-
-Nuestro Drive utiliza 70787.
-
-El servidor hace la traducción.
+Estos IDs se pasan directamente a streams.js.
 
 ============================================================
 */
@@ -137,9 +135,6 @@ app.get(
 
       const requestedId =
         req.params.id;
-
-      let internalId =
-        requestedId;
 
 
       console.log("");
@@ -161,42 +156,39 @@ app.get(
       );
 
       console.log(
-        "REQUESTED:",
+        "ID:",
         requestedId
       );
 
 
       /*
        * ====================================================
-       * IMDb → Drive
+       * TMDB EPISODE
        * ====================================================
        */
 
-      const imdbMatch =
+      const tmdbEpisode =
         requestedId.match(
-          /^tt0090407:(\d+):(\d+)$/
+          /^70787:(\d+):(\d+)$/
         );
 
 
-      if (imdbMatch) {
+      if (tmdbEpisode) {
 
         const season =
           Number(
-            imdbMatch[1]
+            tmdbEpisode[1]
           );
 
         const episode =
           Number(
-            imdbMatch[2]
+            tmdbEpisode[2]
           );
 
 
-        internalId =
-          `70787:${season}:${episode}`;
-
-
         console.log(
-          "IMDb SERIES DETECTED"
+          "TMDB SERIES ID:",
+          "70787"
         );
 
         console.log(
@@ -209,50 +201,48 @@ app.get(
           episode
         );
 
+
+        /*
+         * El identificador ya coincide con
+         * el sistema interno de Drive.
+         */
+
+        const streams =
+          await getStreams(
+            requestedId
+          );
+
+
         console.log(
-          "DRIVE ID:",
-          internalId
+          "STREAMS:",
+          Array.isArray(streams)
+            ? streams.length
+            : 0
         );
 
-      }
 
+        return res.json({
 
-      /*
-       * ====================================================
-       * ID INTERNO ANTIGUO
-       * ====================================================
-       */
+          streams:
+            Array.isArray(streams)
+              ? streams
+              : []
 
-      if (
-        /^70787:\d+:\d+$/.test(
-          requestedId
-        )
-      ) {
-
-        internalId =
-          requestedId;
+        });
 
       }
 
 
       /*
        * ====================================================
-       * STREAMS.JS
+       * FALLBACK
        * ====================================================
        */
 
       const streams =
         await getStreams(
-          internalId
+          requestedId
         );
-
-
-      console.log(
-        "STREAMS:",
-        Array.isArray(streams)
-          ? streams.length
-          : 0
-      );
 
 
       res.json({
@@ -307,7 +297,7 @@ app.listen(
     );
 
     console.log(
-      " STREAM ONLY"
+      " TMDB ONLY"
     );
 
     console.log(
@@ -315,19 +305,23 @@ app.listen(
     );
 
     console.log(
-      " IMDb: tt0090407"
+      " TMDB ID: 70787"
     );
 
     console.log(
-      " INTERNAL: 70787"
+      " IMDb: NONE"
     );
 
     console.log(
-      " METADATA: NUVIO"
+      " CUSTOM METADATA: NONE"
     );
 
     console.log(
-      " EPISODES: NUVIO"
+      " VIDEOS: NONE"
+    );
+
+    console.log(
+      " EPISODES: NUVIO/TMDB"
     );
 
     console.log(
