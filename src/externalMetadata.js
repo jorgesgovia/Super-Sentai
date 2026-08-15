@@ -665,10 +665,10 @@ export async function mergeExternalMetadata(meta, imdbId) {
       Number(item.tmdbId) > 0
     )
     .map((item) => ({
+      id: Number(item.tmdbId),
       name: String(item.name),
       logo: item.logo || undefined,
       tmdbId: Number(item.tmdbId),
-      id: `tmdb:network:${Number(item.tmdbId)}`,
     }));
 
   const navigableProductionCompanies = productionCompanies
@@ -679,10 +679,10 @@ export async function mergeExternalMetadata(meta, imdbId) {
       Number(item.tmdbId) > 0
     )
     .map((item) => ({
+      id: Number(item.tmdbId),
       name: String(item.name),
       logo: item.logo || undefined,
       tmdbId: Number(item.tmdbId),
-      id: `tmdb:company:${Number(item.tmdbId)}`,
     }));
 
   const merged = {
