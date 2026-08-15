@@ -3,13 +3,20 @@ export async function getMetadata() {
     id: "70787",
     type: "series",
     name: "Choushinsei Flashman",
+
     genres: [
       "Action",
       "Adventure",
       "Science Fiction"
     ],
-    network: "TV Asahi",
-    productionCompany: "Toei Company"
+
+    network: "tv asahi",
+
+    productionCompanies: [
+      {
+        name: "Toei Company"
+      }
+    ]
   };
 }
 
