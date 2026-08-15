@@ -1,6 +1,6 @@
 export async function getMetadata() {
   return {
-    id: "super-sentai-flashman",
+    id: "tt0090407",
     type: "series",
 
     name: "Choushinsei Flashman",

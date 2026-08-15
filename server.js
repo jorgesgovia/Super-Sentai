@@ -9,6 +9,25 @@ import { mergeExternalMetadata } from "./src/externalMetadata.js";
 
 const app = express();
 
+// ============================================================
+// ALIAS DE METADATA IMDb -> TMDB
+// tt0090407 solamente sirve como identidad de metadata.
+// Los IDs de episodios/streams NO se modifican.
+// ============================================================
+app.use((req, res, next) => {
+  if (
+    req.path === "/meta/series/tt0090407.json" ||
+    req.path === "/meta/series/tt0090407"
+  ) {
+    req.url = "/meta/series/70787.json";
+    console.log("ALIAS METADATA: tt0090407 -> 70787");
+  }
+
+  next();
+});
+
+
+
 const PORT = process.env.PORT || 7070;
 
 /*
