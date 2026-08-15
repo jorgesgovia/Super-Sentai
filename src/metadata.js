@@ -4,7 +4,7 @@ export async function getMetadata() {
 
     imdb_id: "tt0090407",
 
-    tmdb_id: "70787",
+    tmdb_id: 70787,
 
     tmdbId: "70787",
     type: "series",
