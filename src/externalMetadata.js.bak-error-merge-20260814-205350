@@ -1,9 +1,9 @@
 /*
  * EXPERIMENTO DE METADATA MÍNIMA PARA NUVIO
  *
- * La metadata externa permanece mínima.
- * Se conserva mergeExternalMetadata porque server.js
- * depende de esta función.
+ * La metadata externa queda deliberadamente mínima.
+ * No queremos que otra fuente agregue, fusione o sobrescriba
+ * Red / Producción durante esta prueba.
  */
 
 export async function getExternalMetadata() {
@@ -42,41 +42,6 @@ export async function getExternalMetadata() {
           "https://image.tmdb.org/t/p/w185/qyTbRgCyU9NLKvKaiQVbadtr7RY.png"
       }
     ]
-  };
-}
-
-/*
- * Compatibilidad con server.js
- *
- * Mezcla la metadata externa con la metadata principal
- * sin eliminar los campos existentes.
- */
-export async function mergeExternalMetadata(metadata) {
-  const external = await getExternalMetadata();
-
-  return {
-    ...metadata,
-    ...external,
-
-    /*
-     * Conservamos explícitamente estos campos
-     * del experimento.
-     */
-    genres:
-      external.genres ??
-      metadata.genres,
-
-    network:
-      external.network ??
-      metadata.network,
-
-    networks:
-      external.networks ??
-      metadata.networks,
-
-    productionCompanies:
-      external.productionCompanies ??
-      metadata.productionCompanies
   };
 }
 
