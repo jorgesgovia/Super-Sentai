@@ -2,9 +2,7 @@ import express from "express";
 import cors from "cors";
 
 import {
-  getMetadata,
-  getEpisodes,
-  getEpisode
+  getMetadata
 } from "./src/metadata.js";
 
 import {
@@ -73,6 +71,7 @@ app.get(
   }
 );
 
+
 /*
 ============================================================
 MANIFEST
@@ -128,6 +127,7 @@ app.get(
   }
 );
 
+
 /*
 ============================================================
 CATALOG
@@ -145,15 +145,12 @@ app.get(
 
       noCache(res);
 
-      /*
-       * SIN videos[].
-       */
-
       res.json({
 
         metas: [
 
           {
+
             id:
               metadata.id,
 
@@ -192,6 +189,7 @@ app.get(
 
             productionCompany:
               metadata.productionCompany
+
           }
 
         ]
@@ -206,7 +204,9 @@ app.get(
       );
 
       res.status(500).json({
+
         metas: []
+
       });
 
     }
@@ -214,23 +214,10 @@ app.get(
   }
 );
 
+
 /*
 ============================================================
-META SERIES
-============================================================
-
-ESTA ES LA RESPUESTA CRÍTICA.
-
-NO VIDEOS.
-
-NO EPISODES.
-
-SOLO METADATA DE SERIE.
-
-Esto debe mantener navegables:
-
-TV Asahi
-Toei Company
+META
 ============================================================
 */
 
@@ -251,7 +238,7 @@ app.get(
       );
 
       console.log(
-        " META SERIES"
+        " META SERIES — EXPERIMENTO 13"
       );
 
       console.log(
@@ -274,8 +261,18 @@ app.get(
       );
 
       console.log(
-        "VIDEOS EN META:",
-        "NO"
+        "IMDb:",
+        metadata.imdb_id
+      );
+
+      console.log(
+        "Videos:",
+        metadata.videos.length
+      );
+
+      console.log(
+        "Video 1:",
+        metadata.videos[0].id
       );
 
       res.json({
@@ -303,152 +300,6 @@ app.get(
   }
 );
 
-/*
-============================================================
-NUEVO RECURSO SEPARADO DE EPISODIOS
-============================================================
-
-IMPORTANTE:
-
-Los episodios NO están dentro de /meta/series/70787.json.
-
-Los ponemos en una respuesta independiente.
-
-============================================================
-*/
-
-app.get(
-  "/meta/series/:id/episodes.json",
-  async (req, res) => {
-
-    try {
-
-      const episodes =
-        await getEpisodes();
-
-      noCache(res);
-
-      console.log("");
-      console.log(
-        "======================================"
-      );
-
-      console.log(
-        " EPISODES REQUEST"
-      );
-
-      console.log(
-        "======================================"
-      );
-
-      console.log(
-        "Series:",
-        req.params.id
-      );
-
-      console.log(
-        "Episodes:",
-        episodes.length
-      );
-
-      res.json({
-
-        episodes:
-          episodes
-
-      });
-
-    } catch (error) {
-
-      console.error(
-        "EPISODES ERROR:",
-        error
-      );
-
-      res.status(500).json({
-
-        episodes: []
-
-      });
-
-    }
-
-  }
-);
-
-/*
-============================================================
-EPISODIO INDIVIDUAL
-============================================================
-*/
-
-app.get(
-  "/meta/episode/:id.json",
-  async (req, res) => {
-
-    try {
-
-      const match =
-        String(
-          req.params.id
-        ).match(
-          /^70787:1:(\d+)$/
-        );
-
-      if (!match) {
-
-        return res.status(404).json({
-
-          meta: {}
-
-        });
-
-      }
-
-      const number =
-        Number(match[1]);
-
-      const episode =
-        await getEpisode(
-          number
-        );
-
-      if (!episode) {
-
-        return res.status(404).json({
-
-          meta: {}
-
-        });
-
-      }
-
-      noCache(res);
-
-      res.json({
-
-        meta:
-          episode
-
-      });
-
-    } catch (error) {
-
-      console.error(
-        "EPISODE META ERROR:",
-        error
-      );
-
-      res.status(500).json({
-
-        meta: {}
-
-      });
-
-    }
-
-  }
-);
 
 /*
 ============================================================
@@ -461,11 +312,6 @@ app.get(
   async (req, res) => {
 
     try {
-
-      /*
-       * Solo respondemos con la metadata limpia
-       * de la serie.
-       */
 
       const metadata =
         await getMetadata();
@@ -497,9 +343,20 @@ app.get(
   }
 );
 
+
 /*
 ============================================================
 STREAM
+============================================================
+
+ACEPTAMOS DOS FORMATOS:
+
+70787:1:N
+
+tt0090407:1:N
+
+Y AMBOS TERMINAN EN EL MISMO
+STREAM DE GOOGLE DRIVE.
 ============================================================
 */
 
@@ -509,7 +366,7 @@ app.get(
 
     try {
 
-      const requestedId =
+      let requestedId =
         req.params.id;
 
       console.log("");
@@ -526,17 +383,57 @@ app.get(
       );
 
       console.log(
-        "Type:",
+        "TYPE:",
         req.params.type
       );
 
       console.log(
-        "ID:",
+        "REQUESTED:",
         requestedId
       );
 
+
       /*
-       * EPISODIO
+       * ====================================================
+       * IMDb episode ID
+       * ====================================================
+       */
+
+      const imdbMatch =
+        requestedId.match(
+          /^tt0090407:1:(\d+)$/
+        );
+
+      if (imdbMatch) {
+
+        const episode =
+          Number(
+            imdbMatch[1]
+          );
+
+        const driveId =
+          `70787:1:${episode}`;
+
+        console.log(
+          "IMDb EPISODE:",
+          requestedId
+        );
+
+        console.log(
+          "DRIVE ID:",
+          driveId
+        );
+
+        requestedId =
+          driveId;
+
+      }
+
+
+      /*
+       * ====================================================
+       * DRIVE EPISODE ID
+       * ====================================================
        */
 
       if (
@@ -545,21 +442,22 @@ app.get(
         )
       ) {
 
-        console.log(
-          "DRIVE EPISODE STREAM"
-        );
-
         const streams =
           await getStreams(
             requestedId
           );
 
+        console.log(
+          "STREAMS:",
+          Array.isArray(streams)
+            ? streams.length
+            : 0
+        );
+
         return res.json({
 
           streams:
-            Array.isArray(
-              streams
-            )
+            Array.isArray(streams)
               ? streams
               : []
 
@@ -567,39 +465,11 @@ app.get(
 
       }
 
+
       /*
+       * ====================================================
        * SERIE
-       */
-
-      if (
-        requestedId ===
-        "70787"
-      ) {
-
-        console.log(
-          "SERIES STREAM REQUEST"
-        );
-
-        const streams =
-          await getStreams(
-            requestedId
-          );
-
-        return res.json({
-
-          streams:
-            Array.isArray(
-              streams
-            )
-              ? streams
-              : []
-
-        });
-
-      }
-
-      /*
-       * FALLBACK
+       * ====================================================
        */
 
       const streams =
@@ -610,9 +480,7 @@ app.get(
       res.json({
 
         streams:
-          Array.isArray(
-            streams
-          )
+          Array.isArray(streams)
             ? streams
             : []
 
@@ -636,6 +504,7 @@ app.get(
   }
 );
 
+
 /*
 ============================================================
 START
@@ -658,7 +527,7 @@ app.listen(
     );
 
     console.log(
-      " EXPERIMENTO 12"
+      " EXPERIMENTO 13"
     );
 
     console.log(
@@ -686,11 +555,11 @@ app.listen(
     );
 
     console.log(
-      " EPISODES: SEPARADOS"
+      " EPISODES: IMDb IDs"
     );
 
     console.log(
-      " STREAMS: GOOGLE DRIVE"
+      " STREAMS: Google Drive"
     );
 
     console.log(
