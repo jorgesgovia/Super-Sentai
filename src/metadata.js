@@ -1,50 +1,72 @@
-const TOTAL_EPISODES = 50;
-
-function episodeId(number) {
-  return `70787:1:${number}`;
-}
-
-function createEpisode(number) {
-  return {
-    id: episodeId(number),
-
-    title: `Episodio ${number}`,
-
-    name: `Episodio ${number}`,
-
-    season: 1,
-
-    episode: number,
-
-    overview:
-      `Choushinsei Flashman - Episodio ${number}. Los Flashman continúan enfrentando al Imperio Mess y protegiendo la Tierra de sus amenazas.`,
-
-    released: `1986-01-${String(Math.min(number, 28)).padStart(2, "0")}`,
-
-    thumbnail:
-      "https://images.metahub.space/poster/tt0090407/medium.jpg"
-  };
-}
-
-function createVideos() {
-  const videos = [];
-
-  for (let i = 1; i <= TOTAL_EPISODES; i++) {
-    videos.push(createEpisode(i));
+const episodeData = [
+  {
+    episode: 1,
+    title: "Episodio 1",
+    overview: "La Tierra se encuentra en peligro cuando una amenaza extraterrestre pone en marcha un nuevo plan de conquista. Un grupo de jóvenes deberá enfrentarse al enemigo y convertirse en los guerreros que defenderán el planeta."
+  },
+  {
+    episode: 2,
+    title: "Episodio 2",
+    overview: "Los Flashman continúan su lucha contra el Imperio Mess y descubren que su enemigo prepara un nuevo ataque. El equipo deberá unir sus fuerzas para detenerlo."
+  },
+  {
+    episode: 3,
+    title: "Episodio 3",
+    overview: "Una nueva amenaza obliga a los Flashman a poner a prueba sus habilidades mientras intentan proteger a la población de las fuerzas de Mess."
+  },
+  {
+    episode: 4,
+    title: "Episodio 4",
+    overview: "Los Flashman se enfrentan a una nueva criatura de Mess y deberán encontrar una manera de derrotarla antes de que su poder cause una catástrofe."
+  },
+  {
+    episode: 5,
+    title: "Episodio 5",
+    overview: "El equipo vuelve a entrar en acción cuando aparece una nueva amenaza. La misión pondrá a prueba la confianza y coordinación de los cinco guerreros."
   }
+];
 
-  return videos;
-}
+function createEpisode(episode) {
+  const known = episodeData.find(item => item.episode === episode);
 
-export async function getMetadata() {
   return {
-    id: "70787",
+    id: `70787:1:${episode}`,
 
     type: "series",
 
     name: "Choushinsei Flashman",
 
+    title: known?.title || `Episodio ${episode}`,
+
+    season: 1,
+
+    episode,
+
+    number: episode,
+
+    overview:
+      known?.overview ||
+      `Los Flashman continúan su lucha contra el Imperio Mess en el episodio ${episode} de Choushinsei Flashman.`,
+
+    released: "1986-01-01"
+  };
+}
+
+export async function getMetadata() {
+  const videos = [];
+
+  for (let episode = 1; episode <= 50; episode++) {
+    videos.push(createEpisode(episode));
+  }
+
+  return {
+    id: "70787",
+
+    type: "series",
+
     imdb_id: "tt0090407",
+
+    name: "Choushinsei Flashman",
 
     year: 1986,
 
@@ -65,47 +87,7 @@ export async function getMetadata() {
     description:
       "Choushinsei Flashman es una serie japonesa de Super Sentai producida por Toei Company y transmitida por TV Asahi entre 1986 y 1987.",
 
-    videos: createVideos()
-  };
-}
-
-export async function getEpisodeMetadata(number) {
-  const episode = Number(number);
-
-  if (
-    !Number.isInteger(episode) ||
-    episode < 1 ||
-    episode > TOTAL_EPISODES
-  ) {
-    return null;
-  }
-
-  const video = createEpisode(episode);
-
-  return {
-    id: video.id,
-
-    type: "episode",
-
-    name: video.title,
-
-    title: video.title,
-
-    series: "Choushinsei Flashman",
-
-    seriesId: "70787",
-
-    imdb_id: "tt0090407",
-
-    season: 1,
-
-    episode,
-
-    overview: video.overview,
-
-    released: video.released,
-
-    thumbnail: video.thumbnail
+    videos
   };
 }
 
