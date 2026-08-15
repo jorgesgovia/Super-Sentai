@@ -25,7 +25,6 @@ const ADDON_NAME =
   "Super Sentai Addon";
 
 function noCache(res) {
-
   res.setHeader(
     "Cache-Control",
     "no-store, no-cache, must-revalidate, proxy-revalidate"
@@ -43,15 +42,12 @@ function noCache(res) {
 }
 
 function parseEpisodeId(id) {
-
   const match =
     String(id).match(
       /^70787:1:(\d+)$/
     );
 
-  if (!match) {
-    return null;
-  }
+  if (!match) return null;
 
   return Number(match[1]);
 }
@@ -63,15 +59,10 @@ ROOT
 */
 
 app.get("/", (req, res) => {
-
   res.json({
-
     addon: ADDON_NAME,
-
     status: "ok"
-
   });
-
 });
 
 /*
@@ -85,7 +76,6 @@ app.get(
   (req, res) => {
 
     res.json({
-
       id: ADDON_ID,
 
       version: "1.0.0",
@@ -107,17 +97,12 @@ app.get(
       ],
 
       catalogs: [
-
         {
           type: "series",
-
           id: "super-sentai",
-
           name: "Super Sentai"
         }
-
       ]
-
     });
 
   }
@@ -141,22 +126,16 @@ app.get(
       noCache(res);
 
       res.json({
-
         metas: [
-
           {
-
             id: metadata.id,
 
             type: "series",
 
             name: metadata.name,
 
-            poster:
-              metadata.poster,
-
-            background:
-              metadata.background,
+            poster: metadata.poster,
+            background: metadata.background,
 
             description:
               metadata.description,
@@ -177,48 +156,16 @@ app.get(
               metadata.imdb_id,
 
             /*
-             * NETWORK
+             * ENTIDADES
              */
+
             network:
               metadata.network,
 
-            originalNetwork:
-              metadata.originalNetwork,
-
-            original_network:
-              metadata.original_network,
-
-            networks:
-              metadata.networks,
-
-            originalNetworks:
-              metadata.originalNetworks,
-
-            original_networks:
-              metadata.original_networks,
-
-            /*
-             * PRODUCTION
-             */
             productionCompany:
-              metadata.productionCompany,
-
-            production_company:
-              metadata.production_company,
-
-            productionCompanies:
-              metadata.productionCompanies,
-
-            production_companies:
-              metadata.production_companies,
-
-            production:
-              metadata.production
-
+              metadata.productionCompany
           }
-
         ]
-
       });
 
     } catch (error) {
@@ -233,13 +180,12 @@ app.get(
       });
 
     }
-
   }
 );
 
 /*
 ============================================================
-META — SERIES
+META SERIES
 ============================================================
 */
 
@@ -273,11 +219,6 @@ app.get(
       );
 
       console.log(
-        "Series:",
-        metadata.name
-      );
-
-      console.log(
         "Network:",
         metadata.network
       );
@@ -292,17 +233,8 @@ app.get(
         metadata.videos.length
       );
 
-      /*
-       * MUY IMPORTANTE:
-       *
-       * No reconstruimos la respuesta.
-       * Entregamos exactamente la metadata.
-       */
-
       res.json({
-
         meta: metadata
-
       });
 
     } catch (error) {
@@ -317,13 +249,12 @@ app.get(
       });
 
     }
-
   }
 );
 
 /*
 ============================================================
-META — EPISODE
+META EPISODE
 ============================================================
 */
 
@@ -339,11 +270,9 @@ app.get(
         );
 
       if (!number) {
-
         return res.status(404).json({
           meta: {}
         });
-
       }
 
       const metadata =
@@ -353,15 +282,8 @@ app.get(
 
       noCache(res);
 
-      console.log(
-        "Episode metadata:",
-        req.params.id
-      );
-
       res.json({
-
         meta: metadata
-
       });
 
     } catch (error) {
@@ -376,7 +298,6 @@ app.get(
       });
 
     }
-
   }
 );
 
@@ -398,9 +319,7 @@ app.get(
       noCache(res);
 
       res.json({
-
         meta: metadata
-
       });
 
     } catch (error) {
@@ -415,7 +334,6 @@ app.get(
       });
 
     }
-
   }
 );
 
@@ -458,7 +376,7 @@ app.get(
       );
 
       /*
-       * EPISODIO
+       * EPISODIO INDIVIDUAL
        */
 
       if (
@@ -473,31 +391,21 @@ app.get(
           );
 
         return res.json({
-
           streams:
             Array.isArray(streams)
               ? streams
               : []
-
         });
 
       }
 
       /*
        * SERIE
-       *
-       * Conservamos exactamente
-       * la solución que consiguió
-       * mostrar los capítulos de Drive.
        */
 
       if (
         requestedId === "70787"
       ) {
-
-        console.log(
-          "SERIES STREAM FALLBACK"
-        );
 
         const allStreams = [];
 
@@ -527,7 +435,6 @@ app.get(
               ) {
 
                 allStreams.push({
-
                   ...stream,
 
                   title:
@@ -543,7 +450,6 @@ app.get(
                   episode,
 
                   episodeId
-
                 });
 
               }
@@ -553,27 +459,22 @@ app.get(
           } catch (error) {
 
             console.error(
-              "Episode error:",
+              "Episode stream error:",
               episodeId,
               error
             );
 
           }
-
         }
 
         console.log(
-          "TOTAL DRIVE STREAMS:",
+          "TOTAL STREAMS:",
           allStreams.length
         );
 
         return res.json({
-
-          streams:
-            allStreams
-
+          streams: allStreams
         });
-
       }
 
       /*
@@ -586,12 +487,10 @@ app.get(
         );
 
       res.json({
-
         streams:
           Array.isArray(streams)
             ? streams
             : []
-
       });
 
     } catch (error) {
@@ -602,13 +501,10 @@ app.get(
       );
 
       res.json({
-
         streams: []
-
       });
 
     }
-
   }
 );
 
@@ -624,7 +520,6 @@ app.listen(
   () => {
 
     console.log("");
-
     console.log(
       "======================================"
     );
@@ -650,15 +545,15 @@ app.listen(
     );
 
     console.log(
-      " EPISODES: 50"
-    );
-
-    console.log(
       " NETWORK: TV Asahi"
     );
 
     console.log(
       " PRODUCTION: Toei Company"
+    );
+
+    console.log(
+      " EPISODES: 50"
     );
 
     console.log(

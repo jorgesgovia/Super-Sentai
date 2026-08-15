@@ -1,9 +1,20 @@
 const TOTAL_EPISODES = 50;
 
+const NETWORK = {
+  id: "tv-asahi",
+  name: "TV Asahi",
+  type: "network"
+};
+
+const PRODUCTION = {
+  id: "toei-company",
+  name: "Toei Company",
+  type: "production"
+};
+
 function createEpisode(number) {
   return {
     id: `70787:1:${number}`,
-
     type: "episode",
 
     title: `Episodio ${number}`,
@@ -29,34 +40,21 @@ function createEpisode(number) {
 function createEpisodes() {
   return Array.from(
     { length: TOTAL_EPISODES },
-    (_, index) => createEpisode(index + 1)
+    (_, i) => createEpisode(i + 1)
   );
 }
 
 export async function getMetadata() {
-
-  const videos = createEpisodes();
-
   return {
-
     id: "70787",
-
     type: "series",
 
     name: "Choushinsei Flashman",
 
-    /*
-     * LLAVE IMDb
-     */
     imdb_id: "tt0090407",
 
-    /*
-     * METADATA GENERAL
-     */
     year: 1986,
-
     releaseInfo: "1986-1987",
-
     released: "1986-03-01",
 
     genres: [
@@ -66,64 +64,31 @@ export async function getMetadata() {
     ],
 
     /*
-     * NETWORK
-     *
-     * Se mantienen las propiedades que utilizamos
-     * durante el experimento de Network.
+     * ENTIDADES NAVEGABLES
      */
-    network: "TV Asahi",
 
-    originalNetwork: "TV Asahi",
+    network: NETWORK,
 
-    original_network: "TV Asahi",
-
-    networks: [
-      "TV Asahi"
-    ],
-
-    originalNetworks: [
-      "TV Asahi"
-    ],
-
-    original_networks: [
-      "TV Asahi"
-    ],
+    productionCompany: PRODUCTION,
 
     /*
-     * PRODUCTION
+     * TAMBIÉN dejamos el nombre plano
+     * para compatibilidad.
      */
-    productionCompany: "Toei Company",
 
-    production_company: "Toei Company",
+    networkName: "TV Asahi",
 
-    productionCompanies: [
-      "Toei Company"
-    ],
+    productionCompanyName: "Toei Company",
 
-    production_companies: [
-      "Toei Company"
-    ],
-
-    production: "Toei Company",
-
-    /*
-     * DESCRIPCIÓN
-     */
     description:
       "Choushinsei Flashman es una serie japonesa de Super Sentai producida por Toei Company y transmitida por TV Asahi entre 1986 y 1987.",
 
-    /*
-     * EPISODIOS
-     */
-    videos
-
+    videos: createEpisodes()
   };
 }
 
 export async function getEpisodeMetadata(number) {
-
-  const episode =
-    Number(number);
+  const episode = Number(number);
 
   if (
     !Number.isInteger(episode) ||
@@ -133,43 +98,13 @@ export async function getEpisodeMetadata(number) {
     return null;
   }
 
-  const video =
-    createEpisode(episode);
+  const video = createEpisode(episode);
 
   return {
+    ...video,
 
-    id: video.id,
-
-    type: "episode",
-
-    name: video.title,
-
-    title: video.title,
-
-    series: "Choushinsei Flashman",
-
-    seriesId: "70787",
-
-    imdb_id: "tt0090407",
-
-    season: 1,
-
-    episode,
-
-    overview: video.overview,
-
-    released: video.released,
-
-    thumbnail: video.thumbnail,
-
-    /*
-     * También dejamos disponibles
-     * Network y Production en el episodio.
-     */
-    network: "TV Asahi",
-
-    productionCompany: "Toei Company"
-
+    network: NETWORK,
+    productionCompany: PRODUCTION
   };
 }
 
