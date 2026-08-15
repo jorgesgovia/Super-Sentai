@@ -11,19 +11,7 @@ export async function getMetadata() {
       "Science Fiction"
     ],
 
-    /*
-     * IDENTIFICADORES REALES
-     */
-
-    imdb_id: "tt0090407",
     tmdb_id: "70787",
-
-    /*
-     * ========================================================
-     * TMDB NETWORK
-     * TV Asahi = TMDB 103
-     * ========================================================
-     */
 
     networks: [
       {
@@ -31,13 +19,6 @@ export async function getMetadata() {
         name: "TV Asahi"
       }
     ],
-
-    /*
-     * ========================================================
-     * TMDB PRODUCTION COMPANY
-     * Toei Company = TMDB 5822
-     * ========================================================
-     */
 
     productionCompanies: [
       {
