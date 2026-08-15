@@ -1,9 +1,27 @@
 export async function getMetadata() {
+  const videos = [];
+
+  for (let episode = 1; episode <= 50; episode++) {
+    videos.push({
+      id: `70787:1:${episode}`,
+      title: `Episodio ${episode}`,
+      name: `Episodio ${episode}`,
+      season: 1,
+      episode
+    });
+  }
+
   return {
     id: "70787",
     type: "series",
 
+    imdb_id: "tt0090407",
+
     name: "Choushinsei Flashman",
+
+    year: 1986,
+    releaseInfo: "1986-1987",
+    released: "1986-03-01",
 
     genres: [
       "Action",
@@ -12,8 +30,12 @@ export async function getMetadata() {
     ],
 
     network: "TV Asahi",
+    productionCompany: "Toei Company",
 
-    productionCompany: "Toei Company"
+    description:
+      "Choushinsei Flashman es una serie japonesa de Super Sentai producida por Toei Company y transmitida por TV Asahi entre 1986 y 1987.",
+
+    videos
   };
 }
 

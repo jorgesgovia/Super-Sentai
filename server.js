@@ -59,7 +59,10 @@ app.get("/catalog/:type/:id.json", async (req, res) => {
           description: metadata.description,
           genres: metadata.genres,
           year: metadata.year,
-          releaseInfo: metadata.releaseInfo
+          releaseInfo: metadata.releaseInfo,
+          imdb_id: metadata.imdb_id,
+          network: metadata.network,
+          productionCompany: metadata.productionCompany
         }
       ]
     });
@@ -78,7 +81,8 @@ app.get("/meta/:type/:id.json", async (req, res) => {
 
     console.log("===== META REQUEST =====");
     console.log("Requested:", req.params.id);
-    console.log("Returning:", metadata);
+    console.log("Returning:", metadata.name);
+    console.log("Episodes:", metadata.videos?.length || 0);
 
     res.json({
       meta: {
@@ -96,7 +100,18 @@ app.get("/meta/:type/:id.json", async (req, res) => {
 
 app.get("/stream/:type/:id.json", async (req, res) => {
   try {
-    const streams = await getStreams(req.params.id);
+    const requestedId = req.params.id;
+
+    console.log("===== STREAM REQUEST =====");
+    console.log("Type:", req.params.type);
+    console.log("Requested ID:", requestedId);
+
+    const streams = await getStreams(requestedId);
+
+    console.log(
+      "Streams returned:",
+      Array.isArray(streams) ? streams.length : 0
+    );
 
     res.json({
       streams: Array.isArray(streams) ? streams : []
@@ -115,5 +130,7 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(" Super Sentai Addon");
   console.log(" PORT:", PORT);
   console.log(" STATUS: ONLINE");
+  console.log(" EPISODES: 50");
+  console.log(" STREAMS: src/streams.js");
   console.log("======================================");
 });
