@@ -1,50 +1,118 @@
 const TOTAL_EPISODES = 50;
 
+/*
+============================================================
+ENTIDADES REALES DE TMDB
+============================================================
+
+TV Asahi
+TMDB Network ID: 103
+
+Toei Company
+TMDB Company ID: 5822
+============================================================
+*/
+
+const TV_ASAHI = {
+  id: 103,
+  name: "TV Asahi",
+  logoPath: null,
+  originCountry: "JP"
+};
+
+const TOEI_COMPANY = {
+  id: 5822,
+  name: "Toei Company",
+  logoPath: null,
+  originCountry: "JP"
+};
+
 function createEpisode(number) {
+
   return {
-    id: `70787:1:${number}`,
 
-    type: "video",
+    id:
+      `70787:1:${number}`,
 
-    title: `Episodio ${number}`,
+    type:
+      "video",
 
-    season: 1,
+    title:
+      `Episodio ${number}`,
 
-    episode: number,
+    name:
+      `Episodio ${number}`,
+
+    season:
+      1,
+
+    episode:
+      number,
 
     overview:
       `Choushinsei Flashman — Episodio ${number}. Los Flashman continúan enfrentando al Imperio Mess y protegiendo la Tierra.`,
 
     released:
-      `1986-01-${String(Math.min(number, 28)).padStart(2, "0")}`
+      `1986-01-${String(
+        Math.min(number, 28)
+      ).padStart(2, "0")}`
+
   };
+
 }
 
 function createEpisodes() {
+
   return Array.from(
-    { length: TOTAL_EPISODES },
-    (_, index) => createEpisode(index + 1)
+    {
+      length: TOTAL_EPISODES
+    },
+    (_, index) =>
+      createEpisode(index + 1)
   );
+
 }
 
 export async function getMetadata() {
+
   return {
-    id: "70787",
-
-    type: "series",
-
-    name: "Choushinsei Flashman",
 
     /*
-     * LLAVE IMDb
-     */
-    imdb_id: "tt0090407",
+    ========================================================
+    IDENTIDAD
+    ========================================================
+    */
 
-    year: 1986,
+    id:
+      "70787",
 
-    releaseInfo: "1986-1987",
+    type:
+      "series",
 
-    released: "1986-03-01",
+    name:
+      "Choushinsei Flashman",
+
+    /*
+    LLAVE IMDb
+    */
+
+    imdb_id:
+      "tt0090407",
+
+    /*
+    ========================================================
+    DATOS GENERALES
+    ========================================================
+    */
+
+    year:
+      1986,
+
+    releaseInfo:
+      "1986-1987",
+
+    released:
+      "1986-03-01",
 
     genres: [
       "Action",
@@ -52,26 +120,67 @@ export async function getMetadata() {
       "Science Fiction"
     ],
 
-    /*
-     * IMPORTANTE:
-     * EXACTAMENTE COMO EN LA VERSIÓN
-     * QUE HACÍA NAVEGABLE NUVIO.
-     */
-    network: "TV Asahi",
-
-    productionCompany: "Toei Company",
-
     description:
       "Choushinsei Flashman es una serie japonesa de Super Sentai producida por Toei Company y transmitida por TV Asahi entre 1986 y 1987.",
 
     /*
-     * EPISODIOS
-     */
-    videos: createEpisodes()
+    ========================================================
+    🔥 NUVIO — NETWORK
+    ========================================================
+
+    NO es un string.
+
+    Es la estructura Network que utiliza Nuvio.
+    */
+
+    networks: [
+      TV_ASAHI
+    ],
+
+    /*
+    ========================================================
+    🔥 NUVIO — PRODUCTION COMPANY
+    ========================================================
+
+    NO es un string.
+
+    Es la estructura ProductionCompany que utiliza Nuvio.
+    */
+
+    productionCompanies: [
+      TOEI_COMPANY
+    ],
+
+    /*
+    ========================================================
+    COMPATIBILIDAD
+    ========================================================
+
+    Conservamos también los nombres simples por si otra
+    capa del addon los utiliza.
+    */
+
+    network:
+      "TV Asahi",
+
+    productionCompany:
+      "Toei Company",
+
+    /*
+    ========================================================
+    EPISODIOS
+    ========================================================
+    */
+
+    videos:
+      createEpisodes()
+
   };
+
 }
 
 export async function getEpisodeMetadata(number) {
+
   const episode =
     Number(number);
 
@@ -80,22 +189,27 @@ export async function getEpisodeMetadata(number) {
     episode < 1 ||
     episode > TOTAL_EPISODES
   ) {
+
     return null;
+
   }
 
   const video =
     createEpisode(episode);
 
   return {
-    id: video.id,
 
-    type: "video",
+    id:
+      video.id,
+
+    type:
+      "video",
 
     name:
-      `Episodio ${episode}`,
+      video.name,
 
     title:
-      `Episodio ${episode}`,
+      video.title,
 
     series:
       "Choushinsei Flashman",
@@ -106,18 +220,37 @@ export async function getEpisodeMetadata(number) {
     imdb_id:
       "tt0090407",
 
-    season: 1,
+    season:
+      1,
 
-    episode,
+    episode:
+      episode,
 
     overview:
       video.overview,
 
     released:
-      video.released
+      video.released,
+
+    /*
+     * Dejamos disponibles las entidades también
+     * en el episodio.
+     */
+
+    networks: [
+      TV_ASAHI
+    ],
+
+    productionCompanies: [
+      TOEI_COMPANY
+    ]
+
   };
+
 }
 
 export async function buildMetadata() {
+
   return getMetadata();
+
 }

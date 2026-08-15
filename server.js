@@ -10,10 +10,16 @@ import {
   getStreams
 } from "./src/streams.js";
 
-const app = express();
+const app =
+  express();
 
-app.use(cors());
-app.use(express.json());
+app.use(
+  cors()
+);
+
+app.use(
+  express.json()
+);
 
 const PORT =
   process.env.PORT || 7070;
@@ -40,6 +46,7 @@ function noCache(res) {
     "Expires",
     "0"
   );
+
 }
 
 function parseEpisodeId(id) {
@@ -50,10 +57,15 @@ function parseEpisodeId(id) {
     );
 
   if (!match) {
+
     return null;
+
   }
 
-  return Number(match[1]);
+  return Number(
+    match[1]
+  );
+
 }
 
 /*
@@ -62,14 +74,22 @@ ROOT
 ============================================================
 */
 
-app.get("/", (req, res) => {
+app.get(
+  "/",
+  (req, res) => {
 
-  res.json({
-    addon: ADDON_NAME,
-    status: "ok"
-  });
+    res.json({
 
-});
+      addon:
+        ADDON_NAME,
+
+      status:
+        "ok"
+
+    });
+
+  }
+);
 
 /*
 ============================================================
@@ -83,22 +103,17 @@ app.get(
 
     res.json({
 
-      id: ADDON_ID,
+      id:
+        ADDON_ID,
 
-      version: "1.0.0",
+      version:
+        "1.0.0",
 
-      name: ADDON_NAME,
+      name:
+        ADDON_NAME,
 
       description:
         "Super Sentai Addon para Nuvio",
-
-      /*
-       * IMPORTANTE:
-       *
-       * VOLVEMOS A DECLARAR SOLAMENTE SERIES.
-       *
-       * No agregamos "episode".
-       */
 
       resources: [
         "catalog",
@@ -111,11 +126,19 @@ app.get(
       ],
 
       catalogs: [
+
         {
-          type: "series",
-          id: "super-sentai",
-          name: "Super Sentai"
+          type:
+            "series",
+
+          id:
+            "super-sentai",
+
+          name:
+            "Super Sentai"
+
         }
+
       ]
 
     });
@@ -150,7 +173,7 @@ app.get(
               metadata.id,
 
             type:
-              "series",
+              metadata.type,
 
             name:
               metadata.name,
@@ -180,14 +203,24 @@ app.get(
               metadata.imdb_id,
 
             /*
-             * STRINGS ORIGINALES
+             * 🔥 ENTIDADES NUVIO
+             */
+
+            networks:
+              metadata.networks,
+
+            productionCompanies:
+              metadata.productionCompanies,
+
+            /*
+             * Compatibilidad
              */
 
             network:
-              "TV Asahi",
+              metadata.network,
 
             productionCompany:
-              "Toei Company"
+              metadata.productionCompany
 
           }
 
@@ -203,7 +236,9 @@ app.get(
       );
 
       res.status(500).json({
+
         metas: []
+
       });
 
     }
@@ -242,18 +277,22 @@ app.get(
       );
 
       console.log(
-        "ID:",
+        "Requested:",
         req.params.id
       );
 
       console.log(
         "Network:",
-        metadata.network
+        JSON.stringify(
+          metadata.networks
+        )
       );
 
       console.log(
         "Production:",
-        metadata.productionCompany
+        JSON.stringify(
+          metadata.productionCompanies
+        )
       );
 
       console.log(
@@ -262,12 +301,19 @@ app.get(
       );
 
       /*
-       * ENTREGAMOS TODO EL OBJETO
-       * SIN TRANSFORMAR NETWORK/PRODUCTION.
+       * 🔥 MUY IMPORTANTE:
+       *
+       * No reconstruimos la metadata.
+       *
+       * Entregamos el objeto completo para que Nuvio
+       * reciba networks + productionCompanies + videos.
        */
 
       res.json({
-        meta: metadata
+
+        meta:
+          metadata
+
       });
 
     } catch (error) {
@@ -278,7 +324,9 @@ app.get(
       );
 
       res.status(500).json({
+
         meta: {}
+
       });
 
     }
@@ -298,28 +346,35 @@ app.get(
 
     try {
 
-      const episode =
+      const number =
         parseEpisodeId(
           req.params.id
         );
 
-      if (!episode) {
+      if (!number) {
 
-        return res.status(404).json({
+        return res.status(
+          404
+        ).json({
+
           meta: {}
+
         });
 
       }
 
       const metadata =
         await getEpisodeMetadata(
-          episode
+          number
         );
 
       noCache(res);
 
       res.json({
-        meta: metadata
+
+        meta:
+          metadata
+
       });
 
     } catch (error) {
@@ -330,7 +385,9 @@ app.get(
       );
 
       res.status(500).json({
+
         meta: {}
+
       });
 
     }
@@ -356,7 +413,10 @@ app.get(
       noCache(res);
 
       res.json({
-        meta: metadata
+
+        meta:
+          metadata
+
       });
 
     } catch (error) {
@@ -367,7 +427,9 @@ app.get(
       );
 
       res.status(500).json({
+
         meta: {}
+
       });
 
     }
@@ -414,8 +476,10 @@ app.get(
       );
 
       /*
-       * EPISODIO
-       */
+      ======================================================
+      EPISODIO
+      ======================================================
+      */
 
       if (
         requestedId.startsWith(
@@ -431,7 +495,9 @@ app.get(
         return res.json({
 
           streams:
-            Array.isArray(streams)
+            Array.isArray(
+              streams
+            )
               ? streams
               : []
 
@@ -440,11 +506,14 @@ app.get(
       }
 
       /*
-       * SERIE
-       */
+      ======================================================
+      SERIE
+      ======================================================
+      */
 
       if (
-        requestedId === "70787"
+        requestedId ===
+        "70787"
       ) {
 
         const allStreams = [];
@@ -466,7 +535,9 @@ app.get(
               );
 
             if (
-              Array.isArray(streams) &&
+              Array.isArray(
+                streams
+              ) &&
               streams.length > 0
             ) {
 
@@ -489,9 +560,11 @@ app.get(
                   season:
                     1,
 
-                  episode,
+                  episode:
+                    episode,
 
-                  episodeId
+                  episodeId:
+                    episodeId
 
                 });
 
@@ -517,14 +590,19 @@ app.get(
         );
 
         return res.json({
-          streams: allStreams
+
+          streams:
+            allStreams
+
         });
 
       }
 
       /*
-       * FALLBACK
-       */
+      ======================================================
+      FALLBACK
+      ======================================================
+      */
 
       const streams =
         await getStreams(
@@ -534,7 +612,9 @@ app.get(
       res.json({
 
         streams:
-          Array.isArray(streams)
+          Array.isArray(
+            streams
+          )
             ? streams
             : []
 
@@ -548,7 +628,9 @@ app.get(
       );
 
       res.json({
+
         streams: []
+
       });
 
     }
@@ -593,7 +675,15 @@ app.listen(
     );
 
     console.log(
+      " NETWORK ID: 103"
+    );
+
+    console.log(
       " NETWORK: TV Asahi"
+    );
+
+    console.log(
+      " PRODUCTION ID: 5822"
     );
 
     console.log(
