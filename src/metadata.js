@@ -1,21 +1,40 @@
 export async function getMetadata() {
   return {
+    /*
+     * ============================================================
+     * IDENTIDAD
+     * ============================================================
+     */
+
     id: "70787",
     type: "series",
 
     name: "Choushinsei Flashman",
     originalName: "超新星フラッシュマン",
 
-    /*
-     * Referencias externas solamente.
-     * NO son la identidad principal.
-     */
     imdb_id: "tt0090407",
     tmdb_id: "70787",
 
     /*
-     * ARTWORK
+     * ============================================================
+     * TITULOS ALTERNATIVOS
+     * ============================================================
      */
+
+    aliases: [
+      "Choushinsei Flashman",
+      "Flashman",
+      "Supernova Flashman",
+      "Comando Estelar Flashman",
+      "Flashman: Comando Estelar"
+    ],
+
+    /*
+     * ============================================================
+     * ARTWORK
+     * ============================================================
+     */
+
     poster:
       "https://image.tmdb.org/t/p/original/mKoZUWBPMRa7sFBWMPuusTBBmS1.jpg",
 
@@ -26,8 +45,11 @@ export async function getMetadata() {
       "https://static.wikia.nocookie.net/logopedia/images/c/c2/Flashman_Logo.jpg/revision/latest/scale-to-width-down/1000?cb=20210828005807",
 
     /*
+     * ============================================================
      * DESCRIPCION
+     * ============================================================
      */
+
     description:
       "Cinco jóvenes que fueron secuestrados de la Tierra cuando eran niños regresan veinte años después como los Flashman para proteger la Tierra del Imperio Mess y descubrir sus verdaderos orígenes.",
 
@@ -38,29 +60,53 @@ export async function getMetadata() {
       "¡El tiempo de los Flashman se acaba!",
 
     /*
+     * ============================================================
      * FECHAS
+     * ============================================================
      */
+
     year: 1986,
     releaseInfo: "1986-1987",
     released: "1986-03-01",
 
     /*
+     * ============================================================
      * ESTADO
+     * ============================================================
      */
+
     status: "Ended",
 
     /*
+     * ============================================================
      * GENEROS
+     * ============================================================
      */
+
     genres: [
       "Action",
       "Adventure",
-      "Science Fiction"
+      "Science Fiction",
+      "Drama",
+      "Fantasy",
+      "Family"
+    ],
+
+    genre: [
+      "Action",
+      "Adventure",
+      "Science Fiction",
+      "Drama",
+      "Fantasy",
+      "Family"
     ],
 
     /*
-     * RATING PRINCIPAL
+     * ============================================================
+     * RATINGS
+     * ============================================================
      */
+
     rating: 8.2,
     imdbRating: 8.2,
 
@@ -80,38 +126,50 @@ export async function getMetadata() {
     ],
 
     /*
+     * ============================================================
      * CLASIFICACION
+     * ============================================================
      */
+
     certificate: "TV-PG",
+    contentRating: "TV-PG",
     ageRating: "TV-PG",
 
     /*
+     * ============================================================
      * DURACION
+     * ============================================================
      */
+
     runtime: 30,
 
     /*
-     * IDIOMA — SOLO LA FORMA SIMPLE
-     *
-     * Se eliminan las variantes que anteriormente
-     * podían generar conflictos:
-     * spokenLanguages
-     * spokenLanguage
-     * languages
-     * original_language
+     * ============================================================
+     * IDIOMA
+     * ============================================================
      */
+
     language: "ja",
+    originalLanguage: "ja",
 
     /*
+     * ============================================================
      * PAIS
+     * ============================================================
      */
+
     country: "JP",
 
+    countries: [
+      "JP"
+    ],
+
     /*
-     * NETWORK
-     *
-     * Se mantiene una sola representación estructurada.
+     * ============================================================
+     * NETWORK / EMISORA
+     * ============================================================
      */
+
     network: "tv asahi",
 
     networks: [
@@ -124,8 +182,11 @@ export async function getMetadata() {
     ],
 
     /*
+     * ============================================================
      * PRODUCCION
+     * ============================================================
      */
+
     productionCompanies: [
       {
         name: "Toei Company",
@@ -136,8 +197,35 @@ export async function getMetadata() {
     ],
 
     /*
-     * DIRECTOR
+     * ============================================================
+     * PRODUCTORES
+     * ============================================================
      */
+
+    producer: [
+      {
+        name: "Morihiro Katō"
+      },
+      {
+        name: "Takeyuki Suzuki"
+      }
+    ],
+
+    producers: [
+      {
+        name: "Morihiro Katō"
+      },
+      {
+        name: "Takeyuki Suzuki"
+      }
+    ],
+
+    /*
+     * ============================================================
+     * DIRECTORES
+     * ============================================================
+     */
+
     director: [
       {
         name: "Takao Nagaishi"
@@ -150,9 +238,24 @@ export async function getMetadata() {
       }
     ],
 
+    directors: [
+      {
+        name: "Takao Nagaishi"
+      },
+      {
+        name: "Katsuhiko Taguchi"
+      },
+      {
+        name: "Takao Watanabe"
+      }
+    ],
+
     /*
+     * ============================================================
      * ESCRITORES
+     * ============================================================
      */
+
     writer: [
       {
         name: "Hirohisa Soda"
@@ -162,18 +265,39 @@ export async function getMetadata() {
       }
     ],
 
+    writers: [
+      {
+        name: "Hirohisa Soda"
+      },
+      {
+        name: "Kenji Terada"
+      }
+    ],
+
     /*
+     * ============================================================
      * CREADOR
+     * ============================================================
      */
+
     creator: [
       {
         name: "Nobuo Yajima"
       }
     ],
 
+    creators: [
+      {
+        name: "Nobuo Yajima"
+      }
+    ],
+
     /*
-     * REPARTO
+     * ============================================================
+     * REPARTO PRINCIPAL
+     * ============================================================
      */
+
     cast: [
       {
         name: "Tatsuya Nomi",
@@ -206,16 +330,54 @@ export async function getMetadata() {
       }
     ],
 
+    actors: [
+      {
+        name: "Tatsuya Nomi",
+        character: "Jin / Red Flash"
+      },
+      {
+        name: "Kenta Sato",
+        character: "Dan / Green Flash"
+      },
+      {
+        name: "Mayumi Yamaguchi",
+        character: "Sara / Yellow Flash"
+      },
+      {
+        name: "Yukari Ozawa",
+        character: "Lou / Pink Flash"
+      },
+      {
+        name: "Akira Ishihara",
+        character: "Bun / Blue Flash"
+      },
+      {
+        name: "Hiroko Kataoka"
+      },
+      {
+        name: "Junichi Harada"
+      },
+      {
+        name: "Masayuki Yui"
+      }
+    ],
+
     /*
+     * ============================================================
      * TRAILER
+     * ============================================================
      */
+
     trailerYtIds: [
       "uJ57aEFkm8M"
     ],
 
     /*
-     * ENLACES
+     * ============================================================
+     * ENLACES EXTERNOS
+     * ============================================================
      */
+
     links: [
       {
         name: "IMDb",
@@ -224,6 +386,10 @@ export async function getMetadata() {
       {
         name: "TMDB",
         url: "https://www.themoviedb.org/tv/70787"
+      },
+      {
+        name: "Plex",
+        url: "https://watch.plex.tv/es/show/choushinsei-flashman"
       }
     ]
   };
