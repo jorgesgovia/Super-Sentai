@@ -58,7 +58,7 @@ export async function getMetadata() {
     ],
 
     tmdb: {
-      id: 70787,
+      id: super-sentai-flashman,
       rating: 7.5
     },
 

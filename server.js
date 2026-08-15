@@ -191,7 +191,7 @@ app.get("/meta/:type/:id.json", async (req, res) => {
      */
 
     if (
-      id !== "70787" &&
+      id !== "super-sentai-flashman" &&
       id !== "super-sentai-flashman"
     ) {
       return res.status(404).json({
@@ -351,7 +351,7 @@ app.get("/meta/:type/:id.json", async (req, res) => {
      *
      * Nuvio recibe nuestra metadata directamente.
      *
-     * El ID público de la serie es 70787.
+     * El ID público de la serie es super-sentai-flashman.
      *
      * La reproducción continúa utilizando nuestros IDs
      * internos super-sentai-flashman:1:X.
@@ -368,7 +368,7 @@ app.get("/meta/:type/:id.json", async (req, res) => {
       /*
        * El ID que Nuvio pidió debe coincidir con el ID público.
        */
-      id: "70787",
+      id: "super-sentai-flashman",
 
       /*
        * Nuestros episodios conservan IDs internos para Drive.

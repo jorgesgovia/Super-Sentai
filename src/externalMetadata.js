@@ -1,11 +1,16 @@
 /*
  * SUPER SENTAI ADDON
- * METADATA MANUAL
  *
- * No consulta IMDb.
- * No consulta TMDB.
- * No consulta Cinemeta.
- * No enriquecimiento externo.
+ * METADATA 100% MANUAL
+ *
+ * Esta capa NO consulta:
+ * - IMDb
+ * - TMDB
+ * - Cinemeta
+ *
+ * No convierte IDs.
+ * No enriquece automáticamente.
+ * No reemplaza metadata manual.
  */
 
 export async function mergeExternalMetadata(meta, imdbId) {
@@ -13,8 +18,12 @@ export async function mergeExternalMetadata(meta, imdbId) {
     ...meta,
 
     id: meta?.id || "super-sentai-flashman",
+
     type: meta?.type || "series",
-    name: meta?.name || "Choushinsei Flashman",
+
+    name:
+      meta?.name ||
+      "Choushinsei Flashman",
 
     poster: meta?.poster,
     background: meta?.background,
@@ -38,9 +47,9 @@ export async function mergeExternalMetadata(meta, imdbId) {
     status: meta?.status,
 
     rating: meta?.rating,
-    imdbRating: meta?.imdbRating,
-
     ratings: meta?.ratings || [],
+
+    imdbRating: meta?.imdbRating,
 
     tmdb: meta?.tmdb,
     tmdbRating: meta?.tmdbRating,
@@ -50,20 +59,31 @@ export async function mergeExternalMetadata(meta, imdbId) {
     language: meta?.language,
     originalLanguage: meta?.originalLanguage,
 
-    spokenLanguages: meta?.spokenLanguages || [],
-    spokenLanguage: meta?.spokenLanguage,
-    languages: meta?.languages || [],
+    spokenLanguages:
+      meta?.spokenLanguages || [],
 
-    country: meta?.country,
+    spokenLanguage:
+      meta?.spokenLanguage,
+
+    languages:
+      meta?.languages || [],
+
+    country:
+      meta?.country,
 
     trailerYtIds:
       Array.isArray(meta?.trailerYtIds)
         ? meta.trailerYtIds
         : [],
 
-    certificate: meta?.certificate,
-    certification: meta?.certification,
-    ageRating: meta?.ageRating,
+    certificate:
+      meta?.certificate,
+
+    certification:
+      meta?.certification,
+
+    ageRating:
+      meta?.ageRating,
 
     cast:
       Array.isArray(meta?.cast)
