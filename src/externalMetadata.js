@@ -826,7 +826,8 @@ export async function mergeExternalMetadata(meta, imdbId) {
     networks: navigableNetworks.map((x) => ({
       name: x.name,
       logo: x.logo,
-      tmdbId: x.tmdbId
+      tmdbId: x.tmdbId,
+      id: String(x.tmdbId)
     })),
 
     /*
@@ -859,7 +860,8 @@ export async function mergeExternalMetadata(meta, imdbId) {
     productionCompanies: navigableProductionCompanies.map((x) => ({
       name: x.name,
       logo: x.logo,
-      tmdbId: x.tmdbId
+      tmdbId: x.tmdbId,
+      id: String(x.tmdbId)
     })),
 
     production_companies: navigableProductionCompanies,
