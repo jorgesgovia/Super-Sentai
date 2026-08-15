@@ -60,6 +60,7 @@ app.get("/catalog/:type/:id.json", async (req, res) => {
           genres: metadata.genres,
           year: metadata.year,
           releaseInfo: metadata.releaseInfo,
+          released: metadata.released,
           imdb_id: metadata.imdb_id,
           network: metadata.network,
           productionCompany: metadata.productionCompany
@@ -79,10 +80,15 @@ app.get("/meta/:type/:id.json", async (req, res) => {
   try {
     const metadata = await getMetadata();
 
-    console.log("===== META REQUEST =====");
-    console.log("Requested:", req.params.id);
-    console.log("Returning:", metadata.name);
-    console.log("Episodes:", metadata.videos?.length || 0);
+    console.log("");
+    console.log("======================================");
+    console.log(" META REQUEST");
+    console.log("======================================");
+    console.log("Requested ID:", req.params.id);
+    console.log("Series ID:", metadata.id);
+    console.log("Episodes:", metadata.videos.length);
+    console.log("Network:", metadata.network);
+    console.log("Production:", metadata.productionCompany);
 
     res.json({
       meta: {
@@ -102,20 +108,122 @@ app.get("/stream/:type/:id.json", async (req, res) => {
   try {
     const requestedId = req.params.id;
 
-    console.log("===== STREAM REQUEST =====");
+    console.log("");
+    console.log("======================================");
+    console.log(" STREAM REQUEST");
+    console.log("======================================");
     console.log("Type:", req.params.type);
     console.log("Requested ID:", requestedId);
 
+    /*
+     * ==========================================================
+     * EPISODIO INDIVIDUAL
+     * ==========================================================
+     */
+
+    if (requestedId.startsWith("70787:1:")) {
+      console.log("Individual episode request");
+
+      const streams = await getStreams(requestedId);
+
+      console.log(
+        "Episode streams:",
+        Array.isArray(streams) ? streams.length : 0
+      );
+
+      return res.json({
+        streams: Array.isArray(streams) ? streams : []
+      });
+    }
+
+    /*
+     * ==========================================================
+     * SERIE COMPLETA
+     *
+     * Nuvio está solicitando:
+     *
+     * /stream/series/70787.json
+     *
+     * En lugar de devolver [] intentamos consultar
+     * cada episodio mediante streams.js.
+     * ==========================================================
+     */
+
+    if (requestedId === "70787") {
+      console.log("SERIES REQUEST DETECTED");
+      console.log("Buscando streams de los 50 episodios...");
+
+      const allStreams = [];
+
+      for (let episode = 1; episode <= 50; episode++) {
+        const episodeId = `70787:1:${episode}`;
+
+        try {
+          console.log("Consultando:", episodeId);
+
+          const streams = await getStreams(episodeId);
+
+          if (Array.isArray(streams) && streams.length > 0) {
+            console.log(
+              "ENCONTRADOS:",
+              episodeId,
+              streams.length
+            );
+
+            for (const stream of streams) {
+              allStreams.push({
+                ...stream,
+                name:
+                  stream.name ||
+                  `Choushinsei Flashman - Episodio ${episode}`,
+                title:
+                  stream.title ||
+                  `Episodio ${episode}`,
+                episode: episode,
+                season: 1,
+                episodeId
+              });
+            }
+          } else {
+            console.log(
+              "SIN STREAM:",
+              episodeId
+            );
+          }
+        } catch (episodeError) {
+          console.error(
+            "ERROR EN",
+            episodeId,
+            episodeError
+          );
+        }
+      }
+
+      console.log("");
+      console.log("======================================");
+      console.log(" RESULTADO SERIES");
+      console.log("Streams encontrados:", allStreams.length);
+      console.log("======================================");
+
+      return res.json({
+        streams: allStreams
+      });
+    }
+
+    /*
+     * ==========================================================
+     * CUALQUIER OTRO ID
+     * ==========================================================
+     */
+
+    console.log("ID desconocido:", requestedId);
+
     const streams = await getStreams(requestedId);
 
-    console.log(
-      "Streams returned:",
-      Array.isArray(streams) ? streams.length : 0
-    );
-
-    res.json({
+    return res.json({
       streams: Array.isArray(streams) ? streams : []
     });
+
   } catch (error) {
     console.error("STREAM ERROR:", error);
 
@@ -126,11 +234,16 @@ app.get("/stream/:type/:id.json", async (req, res) => {
 });
 
 app.listen(PORT, "0.0.0.0", () => {
+  console.log("");
   console.log("======================================");
   console.log(" Super Sentai Addon");
-  console.log(" PORT:", PORT);
   console.log(" STATUS: ONLINE");
+  console.log(" PORT:", PORT);
+  console.log(" SERIES ID: 70787");
   console.log(" EPISODES: 50");
-  console.log(" STREAMS: src/streams.js");
+  console.log(" NETWORK: TV Asahi");
+  console.log(" PRODUCTION: Toei Company");
+  console.log(" IMDb: tt0090407");
+  console.log(" STREAM ENGINE: src/streams.js");
   console.log("======================================");
 });

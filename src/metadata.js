@@ -7,7 +7,9 @@ export async function getMetadata() {
       title: `Episodio ${episode}`,
       name: `Episodio ${episode}`,
       season: 1,
-      episode
+      episode: episode,
+      overview: `Choushinsei Flashman - Episodio ${episode}`,
+      released: "1986-01-01"
     });
   }
 
