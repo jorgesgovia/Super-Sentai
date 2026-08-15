@@ -1,6 +1,7 @@
+// NUVIO_METADATA_EXPERIMENT: IMDb_PRIMARY_ID
 export async function getMetadata() {
   return {
-    id: "70787",
+    id: "tt0090407",
     type: "series",
 
     name: "Choushinsei Flashman",
