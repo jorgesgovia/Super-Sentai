@@ -4,7 +4,7 @@ export async function getMetadata() {
 
     imdb_id: "tt0090407",
 
-    tmdb_id: 70787,
+    tmdb_id: "70787",
 
     tmdbId: "70787",
     type: "series",
@@ -45,7 +45,6 @@ export async function getMetadata() {
 
     status: "Ended",
 
-    rating: 81,
     rating: 8.2,
     imdbRating: 8.2,
 
@@ -69,9 +68,8 @@ export async function getMetadata() {
       rating: 7.5
     },
 
-    tmdbRating: 7.5,
-tmdbRating: 8.0,
-tmdbScore: 8.0,
+    tmdbRating: 8.0,
+    tmdbScore: 8.0,
 
     tmdb_score: 8.0,
 
@@ -85,18 +83,6 @@ tmdbScore: 8.0,
 
     languages: ["ja"],
 
-    originalLanguage: "Japanese",
-
-    spokenLanguages: [
-      "Japanese"
-    ],
-
-    spokenLanguage: "ja",
-
-    languages: [
-      "ja"
-    ],
-
     country: "JP",
 
     trailerYtIds: [
@@ -107,20 +93,7 @@ tmdbScore: 8.0,
 
     certification: "L",
 
-    ageRating: "TV-PG",
-
-    language: "ja",
-
-    originalLanguage: "Japanese",
-
-    spokenLanguages: ["Japanese"],
-
-    spokenLanguage: "ja",
-
-    languages: ["ja"],
-
-    country: "JP"
-
+    ageRating: "TV-PG"
   };
 }
 

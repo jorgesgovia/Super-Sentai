@@ -11,13 +11,6 @@ function getJSON(url, headers = {}, redirects = 0) {
       });
 
       res.on("end", () => {
-
-        /*
-         * Seguir redirecciones HTTP.
-         *
-         * Cinemeta actualmente puede responder 307.
-         */
-
         if (
           res.statusCode >= 300 &&
           res.statusCode < 400 &&
@@ -97,6 +90,7 @@ function uniquePeople(list = []) {
     if (seen.has(key)) return false;
 
     seen.add(key);
+
     return true;
   });
 }
@@ -104,12 +98,6 @@ function uniquePeople(list = []) {
 export async function mergeExternalMetadata(meta, imdbId) {
   let tmdb = null;
   let cinemetaData = null;
-
-  /*
-   * ============================================================
-   * CINEMETA
-   * ============================================================
-   */
 
   try {
     cinemetaData = await getJSON(
@@ -127,27 +115,10 @@ export async function mergeExternalMetadata(meta, imdbId) {
     );
   }
 
-  /*
-   * ============================================================
-   * TMDB
-   * ============================================================
-   */
-
   const tmdbToken = process.env.TMDB_API_KEY;
 
   if (tmdbToken && meta?.tmdb_id) {
     try {
-      /*
-       * Usamos el cliente TMDB oficial del addon.
-       *
-       * Esto mantiene una sola implementación de:
-       * - Bearer token
-       * - credits
-       * - external_ids
-       * - videos
-       * - images
-       */
-
       tmdb = await getTmdbSeries(
         meta.tmdb_id
       );
@@ -168,132 +139,112 @@ export async function mergeExternalMetadata(meta, imdbId) {
     );
   }
 
-  /*
-   * ============================================================
-   * DATOS CINEMETA
-   * ============================================================
-   */
-
   const cm = cinemetaData?.meta || {};
 
-  /*
-   * ============================================================
-   * TMDB CAST
-   * ============================================================
-   */
+  const tmdbCast =
+    (tmdb?.credits?.cast || [])
+      .slice(0, 30)
+      .map((person) => ({
+        name: person.name,
+        character:
+          person.character || undefined,
+        photo: person.profile_path
+          ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
+          : undefined,
+      }));
 
-  const tmdbCast = (tmdb?.credits?.cast || []).slice(0, 30).map(
-    (person) => ({
-      name: person.name,
-      character: person.character || undefined,
-      photo: person.profile_path
-        ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
-        : undefined,
-    })
-  );
+  const cinemetaCast =
+    Array.isArray(cm.cast)
+      ? cm.cast.map((person) => {
+          if (typeof person === "string") {
+            return {
+              name: person,
+            };
+          }
 
-  /*
-   * ============================================================
-   * CINEMETA CAST
-   * ============================================================
-   */
-
-  const cinemetaCast = Array.isArray(cm.cast)
-    ? cm.cast.map((person) => {
-        if (typeof person === "string") {
           return {
-            name: person,
+            name: person.name,
+            character:
+              person.character ||
+              person.characterName ||
+              undefined,
+            photo:
+              person.photo ||
+              person.profile ||
+              undefined,
           };
-        }
-
-        return {
-          name: person.name,
-          character:
-            person.character ||
-            person.characterName ||
-            undefined,
-          photo:
-            person.photo ||
-            person.profile ||
-            undefined,
-        };
-      })
-    : [];
+        })
+      : [];
 
   const cast = uniquePeople([
     ...tmdbCast,
     ...cinemetaCast,
-    ...(Array.isArray(meta?.cast) ? meta.cast : []),
+    ...(Array.isArray(meta?.cast)
+      ? meta.cast
+      : []),
   ]).slice(0, 30);
 
-  /*
-   * ============================================================
-   * DIRECTORES
-   * ============================================================
-   */
-
-  const tmdbDirectors = (tmdb?.credits?.crew || [])
-    .filter((person) => person.job === "Director")
-    .map((person) => ({
-      name: person.name,
-      photo: person.profile_path
-        ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
-        : undefined,
-    }));
-
-  const cinemetaDirectors = Array.isArray(cm.director)
-    ? cm.director.map((person) =>
-        typeof person === "string"
-          ? { name: person }
-          : person
+  const tmdbDirectors =
+    (tmdb?.credits?.crew || [])
+      .filter(
+        (person) =>
+          person.job === "Director"
       )
-    : [];
+      .map((person) => ({
+        name: person.name,
+        photo: person.profile_path
+          ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
+          : undefined,
+      }));
+
+  const cinemetaDirectors =
+    Array.isArray(cm.director)
+      ? cm.director.map((person) =>
+          typeof person === "string"
+            ? { name: person }
+            : person
+        )
+      : [];
 
   const directors = uniquePeople([
     ...tmdbDirectors,
     ...cinemetaDirectors,
-    ...(Array.isArray(meta?.director) ? meta.director : []),
+    ...(Array.isArray(meta?.director)
+      ? meta.director
+      : []),
   ]);
 
-  /*
-   * ============================================================
-   * ESCRITORES
-   * ============================================================
-   */
-
-  const tmdbWriters = (tmdb?.credits?.crew || [])
-    .filter(
-      (person) =>
-        person.job === "Writer" ||
-        person.job === "Screenplay" ||
-        person.job === "Story"
-    )
-    .map((person) => ({
-      name: person.name,
-      photo: person.profile_path
-        ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
-        : undefined,
-    }));
-
-  const cinemetaWriters = Array.isArray(cm.writer)
-    ? cm.writer.map((person) =>
-        typeof person === "string"
-          ? { name: person }
-          : person
+  const tmdbWriters =
+    (tmdb?.credits?.crew || [])
+      .filter(
+        (person) =>
+          person.job === "Writer" ||
+          person.job === "Screenplay" ||
+          person.job === "Story"
       )
-    : [];
+      .map((person) => ({
+        name: person.name,
+        photo: person.profile_path
+          ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
+          : undefined,
+      }));
+
+  const cinemetaWriters =
+    Array.isArray(cm.writer)
+      ? cm.writer.map((person) =>
+          typeof person === "string"
+            ? { name: person }
+            : person
+        )
+      : [];
 
   const writers = uniquePeople([
     ...tmdbWriters,
     ...cinemetaWriters,
-    ...(Array.isArray(meta?.writer) ? meta.writer : []),
+    ...(Array.isArray(meta?.writer)
+      ? meta.writer
+      : []),
   ]);
-
-  /*
-   * ============================================================
-   * PRODUCTORAS
-   * ============================================================
-   */
 
   const tmdbProductionCompanies =
     tmdb?.production_companies?.map(
@@ -302,10 +253,11 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
   const cinemetaProductionCompanies =
     Array.isArray(cm.productionCompanies)
-      ? cm.productionCompanies.map((company) =>
-          typeof company === "string"
-            ? company
-            : company?.name
+      ? cm.productionCompanies.map(
+          (company) =>
+            typeof company === "string"
+              ? company
+              : company?.name
         )
       : [];
 
@@ -314,45 +266,41 @@ export async function mergeExternalMetadata(meta, imdbId) {
       [
         ...tmdbProductionCompanies,
         ...cinemetaProductionCompanies,
-        ...(Array.isArray(meta?.productionCompanies)
+        ...(Array.isArray(
+          meta?.productionCompanies
+        )
           ? meta.productionCompanies
           : []),
       ].filter(Boolean)
     ),
   ];
 
-  /*
-   * ============================================================
-   * GÉNEROS
-   * ============================================================
-   */
-
   const tmdbGenres =
-    tmdb?.genres?.map((genre) => genre.name) || [];
+    tmdb?.genres?.map(
+      (genre) => genre.name
+    ) || [];
 
-  const cinemetaGenres = Array.isArray(cm.genres)
-    ? cm.genres.map((genre) =>
-        typeof genre === "string"
-          ? genre
-          : genre?.name || genre?.title
-      )
-    : [];
+  const cinemetaGenres =
+    Array.isArray(cm.genres)
+      ? cm.genres.map((genre) =>
+          typeof genre === "string"
+            ? genre
+            : genre?.name ||
+              genre?.title
+        )
+      : [];
 
   const genres = [
     ...new Set(
       [
         ...tmdbGenres,
         ...cinemetaGenres,
-        ...(Array.isArray(meta?.genres) ? meta.genres : []),
+        ...(Array.isArray(meta?.genres)
+          ? meta.genres
+          : []),
       ].filter(Boolean)
     ),
   ];
-
-  /*
-   * ============================================================
-   * RATING
-   * ============================================================
-   */
 
   const imdbRating = first(
     cm.imdbRating,
@@ -369,16 +317,6 @@ export async function mergeExternalMetadata(meta, imdbId) {
       ? tmdb.vote_average
       : undefined;
 
-  /*
-   * ============================================================
-   * POSTER
-   *
-   * IMPORTANTE:
-   * Conservamos el poster que ya usa el addon.
-   * No cambiamos la reproducción ni la identificación.
-   * ============================================================
-   */
-
   const poster = first(
     meta?.poster,
     cm.poster,
@@ -387,24 +325,15 @@ export async function mergeExternalMetadata(meta, imdbId) {
       : undefined
   );
 
-  /*
-   * ============================================================
-   * CUSTOM ADDON MEDIA
-   * ============================================================
-   *
-   * Preserve the manually defined background and YouTube trailers
-   * from metadata.js after external enrichment.
-   */
-  const customBackground = meta?.background;
-  const customTrailerYtIds = Array.isArray(meta?.trailerYtIds)
-    ? meta.trailerYtIds.filter(Boolean)
-    : [];
+  const customBackground =
+    meta?.background;
 
-  /*
-   * ============================================================
-   * BACKGROUND
-   * ============================================================
-   */
+  const customTrailerYtIds =
+    Array.isArray(
+      meta?.trailerYtIds
+    )
+      ? meta.trailerYtIds.filter(Boolean)
+      : [];
 
   const background = first(
     meta?.background,
@@ -413,12 +342,6 @@ export async function mergeExternalMetadata(meta, imdbId) {
       ? `https://image.tmdb.org/t/p/original${tmdb.backdrop_path}`
       : undefined
   );
-
-  /*
-   * ============================================================
-   * LOGO
-   * ============================================================
-   */
 
   const logo = first(
     meta?.logo,
@@ -443,23 +366,11 @@ export async function mergeExternalMetadata(meta, imdbId) {
       : undefined
   );
 
-  /*
-   * ============================================================
-   * RED / CANAL
-   * ============================================================
-   */
-
   const network = first(
     meta?.network,
     cm.network,
     tmdb?.networks?.[0]?.name
   );
-
-  /*
-   * ============================================================
-   * METADATA FINAL
-   * ============================================================
-   */
 
   const merged = {
     ...meta,
@@ -508,8 +419,11 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
     poster,
 
-    background: customBackground || background,
-    trailerYtIds: customTrailerYtIds,
+    background:
+      customBackground || background,
+
+    trailerYtIds:
+      customTrailerYtIds,
 
     logo,
 
@@ -517,7 +431,9 @@ export async function mergeExternalMetadata(meta, imdbId) {
       meta?.year,
       cm.year,
       tmdb?.first_air_date
-        ? Number(tmdb.first_air_date.slice(0, 4))
+        ? Number(
+            tmdb.first_air_date.slice(0, 4)
+          )
         : undefined
     ),
 
@@ -576,7 +492,8 @@ export async function mergeExternalMetadata(meta, imdbId) {
 
     productionCompanies,
 
-    production_companies: productionCompanies,
+    production_companies:
+      productionCompanies,
 
     cast,
 
@@ -596,13 +513,14 @@ export async function mergeExternalMetadata(meta, imdbId) {
       tmdb?.tagline
     ),
 
-    /*
-     * Conservamos cualquier enlace que Cinemeta ya
-     * entregue, incluyendo referencias externas.
-     */
     links: [
-      ...(Array.isArray(meta?.links) ? meta.links : []),
-      ...(Array.isArray(cm.links) ? cm.links : []),
+      ...(Array.isArray(meta?.links)
+        ? meta.links
+        : []),
+
+      ...(Array.isArray(cm.links)
+        ? cm.links
+        : []),
     ].filter(
       (link, index, array) =>
         index ===
