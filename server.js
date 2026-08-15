@@ -2,17 +2,25 @@ import express from "express";
 import cors from "cors";
 
 import {
-  getMetadata
+  getMetadata,
+  getEpisodes,
+  getEpisode
 } from "./src/metadata.js";
 
 import {
   getStreams
 } from "./src/streams.js";
 
-const app = express();
+const app =
+  express();
 
-app.use(cors());
-app.use(express.json());
+app.use(
+  cors()
+);
+
+app.use(
+  express.json()
+);
 
 const PORT =
   process.env.PORT || 7070;
@@ -24,6 +32,7 @@ const ADDON_NAME =
   "Super Sentai Addon";
 
 function noCache(res) {
+
   res.setHeader(
     "Cache-Control",
     "no-store, no-cache, must-revalidate, proxy-revalidate"
@@ -38,6 +47,7 @@ function noCache(res) {
     "Expires",
     "0"
   );
+
 }
 
 /*
@@ -46,12 +56,22 @@ ROOT
 ============================================================
 */
 
-app.get("/", (req, res) => {
-  res.json({
-    addon: ADDON_NAME,
-    status: "ok"
-  });
-});
+app.get(
+  "/",
+  (req, res) => {
+
+    res.json({
+
+      addon:
+        ADDON_NAME,
+
+      status:
+        "ok"
+
+    });
+
+  }
+);
 
 /*
 ============================================================
@@ -59,40 +79,54 @@ MANIFEST
 ============================================================
 */
 
-app.get("/manifest.json", (req, res) => {
+app.get(
+  "/manifest.json",
+  (req, res) => {
 
-  res.json({
+    res.json({
 
-    id: ADDON_ID,
+      id:
+        ADDON_ID,
 
-    version: "1.0.0",
+      version:
+        "1.0.0",
 
-    name: ADDON_NAME,
+      name:
+        ADDON_NAME,
 
-    description:
-      "Super Sentai Addon para Nuvio",
+      description:
+        "Super Sentai Addon para Nuvio",
 
-    resources: [
-      "catalog",
-      "meta",
-      "stream"
-    ],
+      resources: [
+        "catalog",
+        "meta",
+        "stream"
+      ],
 
-    types: [
-      "series"
-    ],
+      types: [
+        "series"
+      ],
 
-    catalogs: [
-      {
-        type: "series",
-        id: "super-sentai",
-        name: "Super Sentai"
-      }
-    ]
+      catalogs: [
 
-  });
+        {
+          type:
+            "series",
 
-});
+          id:
+            "super-sentai",
+
+          name:
+            "Super Sentai"
+
+        }
+
+      ]
+
+    });
+
+  }
+);
 
 /*
 ============================================================
@@ -111,9 +145,14 @@ app.get(
 
       noCache(res);
 
+      /*
+       * SIN videos[].
+       */
+
       res.json({
 
         metas: [
+
           {
             id:
               metadata.id,
@@ -148,16 +187,13 @@ app.get(
             imdb_id:
               metadata.imdb_id,
 
-            /*
-             * CONSERVAMOS LOS STRINGS.
-             */
-
             network:
               metadata.network,
 
             productionCompany:
               metadata.productionCompany
           }
+
         ]
 
       });
@@ -182,6 +218,20 @@ app.get(
 ============================================================
 META SERIES
 ============================================================
+
+ESTA ES LA RESPUESTA CRÍTICA.
+
+NO VIDEOS.
+
+NO EPISODES.
+
+SOLO METADATA DE SERIE.
+
+Esto debe mantener navegables:
+
+TV Asahi
+Toei Company
+============================================================
 */
 
 app.get(
@@ -201,7 +251,7 @@ app.get(
       );
 
       console.log(
-        " META SERIES — EXPERIMENTO 11"
+        " META SERIES"
       );
 
       console.log(
@@ -209,7 +259,7 @@ app.get(
       );
 
       console.log(
-        "Requested:",
+        "ID:",
         req.params.id
       );
 
@@ -224,28 +274,15 @@ app.get(
       );
 
       console.log(
-        "Videos:",
-        metadata.videos.length
+        "VIDEOS EN META:",
+        "NO"
       );
-
-      console.log(
-        "First video:",
-        JSON.stringify(
-          metadata.videos[0],
-          null,
-          2
-        )
-      );
-
-      /*
-       * ENTREGAMOS LA META COMPLETA.
-       *
-       * videos[] es la ÚNICA estructura especial
-       * añadida para los episodios.
-       */
 
       res.json({
-        meta: metadata
+
+        meta:
+          metadata
+
       });
 
     } catch (error) {
@@ -256,7 +293,156 @@ app.get(
       );
 
       res.status(500).json({
+
         meta: {}
+
+      });
+
+    }
+
+  }
+);
+
+/*
+============================================================
+NUEVO RECURSO SEPARADO DE EPISODIOS
+============================================================
+
+IMPORTANTE:
+
+Los episodios NO están dentro de /meta/series/70787.json.
+
+Los ponemos en una respuesta independiente.
+
+============================================================
+*/
+
+app.get(
+  "/meta/series/:id/episodes.json",
+  async (req, res) => {
+
+    try {
+
+      const episodes =
+        await getEpisodes();
+
+      noCache(res);
+
+      console.log("");
+      console.log(
+        "======================================"
+      );
+
+      console.log(
+        " EPISODES REQUEST"
+      );
+
+      console.log(
+        "======================================"
+      );
+
+      console.log(
+        "Series:",
+        req.params.id
+      );
+
+      console.log(
+        "Episodes:",
+        episodes.length
+      );
+
+      res.json({
+
+        episodes:
+          episodes
+
+      });
+
+    } catch (error) {
+
+      console.error(
+        "EPISODES ERROR:",
+        error
+      );
+
+      res.status(500).json({
+
+        episodes: []
+
+      });
+
+    }
+
+  }
+);
+
+/*
+============================================================
+EPISODIO INDIVIDUAL
+============================================================
+*/
+
+app.get(
+  "/meta/episode/:id.json",
+  async (req, res) => {
+
+    try {
+
+      const match =
+        String(
+          req.params.id
+        ).match(
+          /^70787:1:(\d+)$/
+        );
+
+      if (!match) {
+
+        return res.status(404).json({
+
+          meta: {}
+
+        });
+
+      }
+
+      const number =
+        Number(match[1]);
+
+      const episode =
+        await getEpisode(
+          number
+        );
+
+      if (!episode) {
+
+        return res.status(404).json({
+
+          meta: {}
+
+        });
+
+      }
+
+      noCache(res);
+
+      res.json({
+
+        meta:
+          episode
+
+      });
+
+    } catch (error) {
+
+      console.error(
+        "EPISODE META ERROR:",
+        error
+      );
+
+      res.status(500).json({
+
+        meta: {}
+
       });
 
     }
@@ -276,13 +462,21 @@ app.get(
 
     try {
 
+      /*
+       * Solo respondemos con la metadata limpia
+       * de la serie.
+       */
+
       const metadata =
         await getMetadata();
 
       noCache(res);
 
       res.json({
-        meta: metadata
+
+        meta:
+          metadata
+
       });
 
     } catch (error) {
@@ -293,7 +487,9 @@ app.get(
       );
 
       res.status(500).json({
+
         meta: {}
+
       });
 
     }
@@ -340,15 +536,7 @@ app.get(
       );
 
       /*
-       * ====================================================
        * EPISODIO
-       * ====================================================
-       *
-       * Nuvio/Stremio debe enviar:
-       *
-       * 70787:1:1
-       * 70787:1:2
-       * ...
        */
 
       if (
@@ -358,7 +546,7 @@ app.get(
       ) {
 
         console.log(
-          "EPISODE STREAM"
+          "DRIVE EPISODE STREAM"
         );
 
         const streams =
@@ -366,17 +554,12 @@ app.get(
             requestedId
           );
 
-        console.log(
-          "Streams:",
-          Array.isArray(streams)
-            ? streams.length
-            : 0
-        );
-
         return res.json({
 
           streams:
-            Array.isArray(streams)
+            Array.isArray(
+              streams
+            )
               ? streams
               : []
 
@@ -385,16 +568,12 @@ app.get(
       }
 
       /*
-       * ====================================================
        * SERIE
-       * ====================================================
-       *
-       * Conservamos también esta posibilidad para que
-       * el botón Reproducir de la ficha no se quede vacío.
        */
 
       if (
-        requestedId === "70787"
+        requestedId ===
+        "70787"
       ) {
 
         console.log(
@@ -409,7 +588,9 @@ app.get(
         return res.json({
 
           streams:
-            Array.isArray(streams)
+            Array.isArray(
+              streams
+            )
               ? streams
               : []
 
@@ -418,9 +599,7 @@ app.get(
       }
 
       /*
-       * ====================================================
        * FALLBACK
-       * ====================================================
        */
 
       const streams =
@@ -431,7 +610,9 @@ app.get(
       res.json({
 
         streams:
-          Array.isArray(streams)
+          Array.isArray(
+            streams
+          )
             ? streams
             : []
 
@@ -445,7 +626,9 @@ app.get(
       );
 
       res.json({
+
         streams: []
+
       });
 
     }
@@ -475,7 +658,7 @@ app.listen(
     );
 
     console.log(
-      " EXPERIMENTO 11"
+      " EXPERIMENTO 12"
     );
 
     console.log(
@@ -503,11 +686,11 @@ app.listen(
     );
 
     console.log(
-      " EPISODES: 50"
+      " EPISODES: SEPARADOS"
     );
 
     console.log(
-      " STREAMS: Google Drive"
+      " STREAMS: GOOGLE DRIVE"
     );
 
     console.log(
