@@ -1,0 +1,11 @@
+export async function getExternalMetadata() {
+  return {};
+}
+
+export async function mergeExternalMetadata(metadata) {
+  return metadata;
+}
+
+export async function buildExternalMetadata() {
+  return {};
+}

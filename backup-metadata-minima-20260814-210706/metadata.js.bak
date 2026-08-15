@@ -1,0 +1,240 @@
+export async function getMetadata() {
+  return {
+    id: "70787",
+    type: "series",
+
+    name: "Choushinsei Flashman",
+
+    genres: [
+      "Action",
+      "Adventure",
+      "Science Fiction",
+      "Fantasy",
+      "Drama"
+    ],
+
+    poster:
+      "https://image.tmdb.org/t/p/original/mKoZUWBPMRa7sFBWMPuusTBBmS1.jpg",
+
+    background:
+      "https://imgbs.com/uploads/flashman-a8f83054.jpg",
+
+    logo:
+      "https://static.wikia.nocookie.net/logopedia/images/c/c2/Flashman_Logo.jpg/revision/latest/scale-to-width-down/1000?cb=20210828005807",
+
+    year: 1986,
+    releaseInfo: "1986-1987",
+    released: "1986-03-01",
+
+    status: "Ended",
+
+    language: "ja",
+    country: "JP",
+
+    runtime: 30,
+
+    certificate: "TV-PG",
+    ageRating: "TV-PG",
+
+    /*
+     * RED / NETWORK
+     */
+
+    network: "TV Asahi",
+
+    networks: [
+      {
+        name: "TV Asahi"
+      }
+    ],
+
+    tvNetwork: "TV Asahi",
+
+    tvNetworks: [
+      {
+        name: "TV Asahi"
+      }
+    ],
+
+    broadcastNetwork: "TV Asahi",
+
+    broadcasters: [
+      {
+        name: "TV Asahi"
+      }
+    ],
+
+    /*
+     * PRODUCCIÓN
+     */
+
+    productionCompany: "Toei Company",
+
+    productionCompanies: [
+      {
+        name: "Toei Company"
+      }
+    ],
+
+    production_companies: [
+      {
+        name: "Toei Company"
+      }
+    ],
+
+    production: [
+      {
+        name: "Toei Company"
+      }
+    ],
+
+    companies: [
+      {
+        name: "Toei Company"
+      }
+    ],
+
+    studios: [
+      {
+        name: "Toei Company"
+      }
+    ],
+
+    studio: "Toei Company",
+
+    /*
+     * CREADOR
+     */
+
+    creator: [
+      {
+        name: "Nobuo Yajima"
+      }
+    ],
+
+    creators: [
+      {
+        name: "Nobuo Yajima"
+      }
+    ],
+
+    /*
+     * DIRECTORES
+     */
+
+    director: [
+      {
+        name: "Takao Nagaishi"
+      },
+      {
+        name: "Katsuhiko Taguchi"
+      },
+      {
+        name: "Takao Watanabe"
+      },
+      {
+        name: "Shohei Tôjô"
+      }
+    ],
+
+    directors: [
+      {
+        name: "Takao Nagaishi"
+      },
+      {
+        name: "Katsuhiko Taguchi"
+      },
+      {
+        name: "Takao Watanabe"
+      },
+      {
+        name: "Shohei Tôjô"
+      }
+    ],
+
+    /*
+     * ESCRITORES
+     */
+
+    writer: [
+      {
+        name: "Hirohisa Soda"
+      },
+      {
+        name: "Kenji Terada"
+      }
+    ],
+
+    writers: [
+      {
+        name: "Hirohisa Soda"
+      },
+      {
+        name: "Kenji Terada"
+      }
+    ],
+
+    /*
+     * REPARTO
+     */
+
+    cast: [
+      {
+        name: "Tatsuya Nomi",
+        character: "Jin / Red Flash"
+      },
+      {
+        name: "Kenta Sato",
+        character: "Dan / Green Flash"
+      },
+      {
+        name: "Mayumi Yamaguchi",
+        character: "Sara / Yellow Flash"
+      },
+      {
+        name: "Yukari Ozawa",
+        character: "Lou / Pink Flash"
+      },
+      {
+        name: "Akira Ishihara",
+        character: "Bun / Blue Flash"
+      },
+      {
+        name: "Hiroko Kataoka"
+      },
+      {
+        name: "Junichi Harada"
+      },
+      {
+        name: "Masayuki Yui"
+      }
+    ],
+
+    actors: [
+      {
+        name: "Tatsuya Nomi",
+        character: "Jin / Red Flash"
+      },
+      {
+        name: "Kenta Sato",
+        character: "Dan / Green Flash"
+      },
+      {
+        name: "Mayumi Yamaguchi",
+        character: "Sara / Yellow Flash"
+      },
+      {
+        name: "Yukari Ozawa",
+        character: "Lou / Pink Flash"
+      },
+      {
+        name: "Akira Ishihara",
+        character: "Bun / Blue Flash"
+      }
+    ]
+  };
+}
+
+export async function buildMetadata() {
+  return getMetadata();
+}
