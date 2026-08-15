@@ -2,6 +2,10 @@ import express from "express";
 import cors from "cors";
 
 import {
+  getMetadata
+} from "./src/metadata.js";
+
+import {
   getStreams
 } from "./src/streams.js";
 
@@ -50,10 +54,13 @@ app.get(
       status:
         "ok",
 
+      metadataProvider:
+        "external",
+
       source:
         "TMDB",
 
-      tmdb_id:
+      tmdbId:
         "70787"
 
     });
@@ -67,13 +74,14 @@ app.get(
 MANIFEST
 ============================================================
 
-El addon NO ofrece metadata.
+IMPORTANTE:
 
-El identificador del contenido es TMDB:
+Sí mantenemos CATALOG + META.
 
-70787
+Si eliminamos estos recursos, Nuvio puede no descubrir
+la serie mediante nuestro addon.
 
-La función principal es STREAM.
+Pero NO ponemos videos[].
 
 ============================================================
 */
@@ -94,14 +102,37 @@ app.get(
         ADDON_NAME,
 
       description:
-        "Super Sentai stream provider",
+        "Super Sentai stream provider using external metadata",
 
       resources: [
+
+        "catalog",
+        "meta",
         "stream"
+
       ],
 
       types: [
+
         "series"
+
+      ],
+
+      catalogs: [
+
+        {
+
+          type:
+            "series",
+
+          id:
+            "super-sentai",
+
+          name:
+            "Super Sentai"
+
+        }
+
       ]
 
     });
@@ -112,17 +143,217 @@ app.get(
 
 /*
 ============================================================
+CATALOG
+============================================================
+
+El catálogo solamente descubre la serie.
+
+NO metadata enriquecida.
+
+NO videos[].
+
+============================================================
+*/
+
+app.get(
+  "/catalog/:type/:id.json",
+  async (req, res) => {
+
+    try {
+
+      const metadata =
+        await getMetadata();
+
+
+      console.log("");
+      console.log(
+        "======================================"
+      );
+
+      console.log(
+        " CATALOG"
+      );
+
+      console.log(
+        "======================================"
+      );
+
+      console.log(
+        "TMDB:",
+        metadata.id
+      );
+
+
+      res.json({
+
+        metas: [
+
+          {
+
+            id:
+              metadata.id,
+
+            type:
+              metadata.type,
+
+            name:
+              metadata.name
+
+          }
+
+        ]
+
+      });
+
+
+    } catch (error) {
+
+      console.error(
+        "CATALOG ERROR:",
+        error
+      );
+
+
+      res.status(500).json({
+
+        metas: []
+
+      });
+
+    }
+
+  }
+);
+
+
+/*
+============================================================
+META
+============================================================
+
+Esta es la parte crítica.
+
+Solo:
+
+id
+type
+name
+
+NO:
+
+videos
+network
+production
+poster
+background
+description
+year
+releaseInfo
+
+La intención es que Nuvio pueda usar su metadata externa.
+
+============================================================
+*/
+
+app.get(
+  "/meta/:type/:id.json",
+  async (req, res) => {
+
+    try {
+
+      const metadata =
+        await getMetadata();
+
+
+      console.log("");
+      console.log(
+        "======================================"
+      );
+
+      console.log(
+        " META — EXTERNAL METADATA"
+      );
+
+      console.log(
+        "======================================"
+      );
+
+      console.log(
+        "REQUESTED:",
+        req.params.id
+      );
+
+      console.log(
+        "RETURNING TMDB:",
+        metadata.id
+      );
+
+      console.log(
+        "VIDEOS:",
+        "NONE"
+      );
+
+      console.log(
+        "CUSTOM METADATA:",
+        "NONE"
+      );
+
+
+      res.json({
+
+        meta: {
+
+          id:
+            metadata.id,
+
+          type:
+            metadata.type,
+
+          name:
+            metadata.name
+
+        }
+
+      });
+
+
+    } catch (error) {
+
+      console.error(
+        "META ERROR:",
+        error
+      );
+
+
+      res.status(500).json({
+
+        meta: {}
+
+      });
+
+    }
+
+  }
+);
+
+
+/*
+============================================================
 STREAM
 ============================================================
 
-TMDB:
+ACEPTAMOS:
 
-70787:1:1
-70787:1:2
-70787:1:3
-...
+70787:1:N
 
-Estos IDs se pasan directamente a streams.js.
+tt0090407:1:N
+
+y otros formatos compatibles.
+
+Nuvio puede utilizar TMDB o IMDb dependiendo de
+su proveedor externo.
+
+Nosotros no necesitamos saber cuál usa.
 
 ============================================================
 */
@@ -135,6 +366,10 @@ app.get(
 
       const requestedId =
         req.params.id;
+
+
+      let internalId =
+        requestedId;
 
 
       console.log("");
@@ -156,39 +391,44 @@ app.get(
       );
 
       console.log(
-        "ID:",
+        "REQUESTED ID:",
         requestedId
       );
 
 
       /*
        * ====================================================
-       * TMDB EPISODE
+       * TMDB
+       *
+       * 70787:1:23
        * ====================================================
        */
 
-      const tmdbEpisode =
+      const tmdbMatch =
         requestedId.match(
           /^70787:(\d+):(\d+)$/
         );
 
 
-      if (tmdbEpisode) {
+      if (tmdbMatch) {
 
         const season =
           Number(
-            tmdbEpisode[1]
+            tmdbMatch[1]
           );
 
         const episode =
           Number(
-            tmdbEpisode[2]
+            tmdbMatch[2]
           );
 
 
+        internalId =
+          `70787:${season}:${episode}`;
+
+
         console.log(
-          "TMDB SERIES ID:",
-          "70787"
+          "TMDB EPISODE"
         );
 
         console.log(
@@ -201,48 +441,74 @@ app.get(
           episode
         );
 
-
-        /*
-         * El identificador ya coincide con
-         * el sistema interno de Drive.
-         */
-
-        const streams =
-          await getStreams(
-            requestedId
-          );
+      }
 
 
-        console.log(
-          "STREAMS:",
-          Array.isArray(streams)
-            ? streams.length
-            : 0
+      /*
+       * ====================================================
+       * IMDb
+       *
+       * tt0090407:1:23
+       *
+       * Solo lo aceptamos como compatibilidad.
+       *
+       * NO se utiliza para metadata.
+       * ====================================================
+       */
+
+      const imdbMatch =
+        requestedId.match(
+          /^tt0090407:(\d+):(\d+)$/
         );
 
 
-        return res.json({
+      if (imdbMatch) {
 
-          streams:
-            Array.isArray(streams)
-              ? streams
-              : []
+        const season =
+          Number(
+            imdbMatch[1]
+          );
 
-        });
+        const episode =
+          Number(
+            imdbMatch[2]
+          );
+
+
+        internalId =
+          `70787:${season}:${episode}`;
+
+
+        console.log(
+          "EXTERNAL IMDb EPISODE DETECTED"
+        );
+
+        console.log(
+          "CONVERTED TO:",
+          internalId
+        );
 
       }
 
 
       /*
        * ====================================================
-       * FALLBACK
+       * LLAMADA A DRIVE
        * ====================================================
        */
 
       const streams =
         await getStreams(
-          requestedId
+          internalId
         );
+
+
+      console.log(
+        "STREAMS FOUND:",
+        Array.isArray(streams)
+          ? streams.length
+          : 0
+      );
 
 
       res.json({
@@ -297,7 +563,7 @@ app.listen(
     );
 
     console.log(
-      " TMDB ONLY"
+      " EXPERIMENTO 15"
     );
 
     console.log(
@@ -305,32 +571,35 @@ app.listen(
     );
 
     console.log(
-      " TMDB ID: 70787"
+      "======================================"
     );
 
     console.log(
-      " IMDb: NONE"
+      "TMDB ID: 70787"
     );
 
     console.log(
-      " CUSTOM METADATA: NONE"
+      "IMDb METADATA: NO"
     );
 
     console.log(
-      " VIDEOS: NONE"
+      "CUSTOM METADATA: MINIMAL"
     );
 
     console.log(
-      " EPISODES: NUVIO/TMDB"
+      "VIDEOS: NONE"
     );
 
     console.log(
-      " STREAMS: GOOGLE DRIVE"
+      "EPISODES: EXTERNAL"
+    );
+
+    console.log(
+      "STREAM SOURCE: GOOGLE DRIVE"
     );
 
     console.log(
       "======================================"
-
     );
 
   }
