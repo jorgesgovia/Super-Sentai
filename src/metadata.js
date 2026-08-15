@@ -1,30 +1,25 @@
 /*
 ============================================================
 SUPER SENTAI ADDON
-EXPERIMENTO 15
+EXPERIMENTO 16
 
-OBJETIVO:
-
-Dejar que Nuvio utilice su proveedor externo de metadata.
-
-Nuestro addon solamente identifica la serie mediante
-su TMDB TV ID real.
-
-TMDB:
+TMDB ID:
 70787
 
+METADATA EXTERNA:
+ACTIVA
+
+PRUEBA:
+- IMDb rating manual
+- Background manual
+
 NO:
-- IMDb
 - videos[]
-- episodios
-- sinopsis
-- posters
-- backgrounds
-- temporadas manuales
-- títulos de episodios
+- episodios manuales
 - network manual
 - productionCompany manual
-
+- poster manual
+- description manual
 ============================================================
 */
 
@@ -33,22 +28,26 @@ export async function getMetadata() {
   return {
 
     /*
-     * Identificador TMDB REAL
+     * Identificador TMDB real
      */
+    id: "70787",
 
-    id:
-      "70787",
+    type: "series",
 
-    type:
-      "series",
+    name: "Choushinsei Flashman",
 
     /*
-     * Nombre mínimo para que el addon pueda ser
-     * descubierto.
+     * PRUEBA 1
+     * IMDb rating manual
      */
+    imdbRating: 8.2,
 
-    name:
-      "Choushinsei Flashman"
+    /*
+     * PRUEBA 2
+     * Background manual
+     */
+    background:
+      "https://imgbs.com/uploads/flashman-a8f83054.jpg"
 
   };
 

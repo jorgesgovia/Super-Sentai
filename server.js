@@ -54,14 +54,14 @@ app.get(
       status:
         "ok",
 
-      metadataProvider:
-        "external",
-
       source:
         "TMDB",
 
       tmdbId:
-        "70787"
+        "70787",
+
+      externalMetadata:
+        true
 
     });
 
@@ -72,17 +72,6 @@ app.get(
 /*
 ============================================================
 MANIFEST
-============================================================
-
-IMPORTANTE:
-
-Sí mantenemos CATALOG + META.
-
-Si eliminamos estos recursos, Nuvio puede no descubrir
-la serie mediante nuestro addon.
-
-Pero NO ponemos videos[].
-
 ============================================================
 */
 
@@ -146,11 +135,8 @@ app.get(
 CATALOG
 ============================================================
 
-El catálogo solamente descubre la serie.
-
-NO metadata enriquecida.
-
-NO videos[].
+Mantenemos solamente los campos necesarios para que
+Nuvio siga detectando la serie.
 
 ============================================================
 */
@@ -179,7 +165,7 @@ app.get(
       );
 
       console.log(
-        "TMDB:",
+        "ID:",
         metadata.id
       );
 
@@ -231,26 +217,18 @@ app.get(
 META
 ============================================================
 
-Esta es la parte crítica.
+Aquí probamos únicamente:
 
-Solo:
+IMDb rating
+Background
 
-id
-type
-name
+NO videos[].
 
-NO:
+NO episodios.
 
-videos
-network
-production
-poster
-background
-description
-year
-releaseInfo
+NO network.
 
-La intención es que Nuvio pueda usar su metadata externa.
+NO productionCompany.
 
 ============================================================
 */
@@ -271,7 +249,7 @@ app.get(
       );
 
       console.log(
-        " META — EXTERNAL METADATA"
+        " META — RATING + BACKGROUND"
       );
 
       console.log(
@@ -284,8 +262,18 @@ app.get(
       );
 
       console.log(
-        "RETURNING TMDB:",
+        "TMDB ID:",
         metadata.id
+      );
+
+      console.log(
+        "IMDb RATING:",
+        metadata.imdbRating
+      );
+
+      console.log(
+        "BACKGROUND:",
+        metadata.background
       );
 
       console.log(
@@ -294,7 +282,7 @@ app.get(
       );
 
       console.log(
-        "CUSTOM METADATA:",
+        "EPISODES:",
         "NONE"
       );
 
@@ -310,7 +298,13 @@ app.get(
             metadata.type,
 
           name:
-            metadata.name
+            metadata.name,
+
+          imdbRating:
+            metadata.imdbRating,
+
+          background:
+            metadata.background
 
         }
 
@@ -342,18 +336,17 @@ app.get(
 STREAM
 ============================================================
 
-ACEPTAMOS:
+NO MODIFICAMOS LA LÓGICA DE DRIVE.
 
+TMDB:
 70787:1:N
 
+IMDb:
 tt0090407:1:N
 
-y otros formatos compatibles.
+Ambos terminan en:
 
-Nuvio puede utilizar TMDB o IMDb dependiendo de
-su proveedor externo.
-
-Nosotros no necesitamos saber cuál usa.
+70787:1:N
 
 ============================================================
 */
@@ -391,17 +384,13 @@ app.get(
       );
 
       console.log(
-        "REQUESTED ID:",
+        "REQUESTED:",
         requestedId
       );
 
 
       /*
-       * ====================================================
        * TMDB
-       *
-       * 70787:1:23
-       * ====================================================
        */
 
       const tmdbMatch =
@@ -445,15 +434,9 @@ app.get(
 
 
       /*
-       * ====================================================
-       * IMDb
-       *
-       * tt0090407:1:23
-       *
-       * Solo lo aceptamos como compatibilidad.
+       * IMDb compatibility
        *
        * NO se utiliza para metadata.
-       * ====================================================
        */
 
       const imdbMatch =
@@ -480,11 +463,11 @@ app.get(
 
 
         console.log(
-          "EXTERNAL IMDb EPISODE DETECTED"
+          "IMDb EPISODE COMPATIBILITY"
         );
 
         console.log(
-          "CONVERTED TO:",
+          "CONVERTED:",
           internalId
         );
 
@@ -492,9 +475,7 @@ app.get(
 
 
       /*
-       * ====================================================
-       * LLAMADA A DRIVE
-       * ====================================================
+       * Drive
        */
 
       const streams =
@@ -563,7 +544,7 @@ app.listen(
     );
 
     console.log(
-      " EXPERIMENTO 15"
+      " EXPERIMENTO 16"
     );
 
     console.log(
@@ -579,11 +560,11 @@ app.listen(
     );
 
     console.log(
-      "IMDb METADATA: NO"
+      "IMDb RATING: 8.2"
     );
 
     console.log(
-      "CUSTOM METADATA: MINIMAL"
+      "BACKGROUND: ENABLED"
     );
 
     console.log(
@@ -595,7 +576,7 @@ app.listen(
     );
 
     console.log(
-      "STREAM SOURCE: GOOGLE DRIVE"
+      "STREAM: GOOGLE DRIVE"
     );
 
     console.log(
