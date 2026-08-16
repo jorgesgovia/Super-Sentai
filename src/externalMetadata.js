@@ -1,816 +1,653 @@
-import "dotenv/config";
+import https from "node:https";
+import { getTmdbSeries } from "./tmdb.js";
 
-const TMDB_API_KEY =
-  process.env.TMDB_API_KEY ||
-  process.env.TMDB_ACCESS_TOKEN ||
-  "";
+function getJSON(url, headers = {}, redirects = 0) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, { headers }, (res) => {
+      let data = "";
 
-const TMDB_BASE = "https://api.themoviedb.org/3";
-const TMDB_IMAGE = "https://image.tmdb.org/t/p/original";
+      res.on("data", (chunk) => {
+        data += chunk;
+      });
 
-const FLASHMAN_TMDB_ID = 70787;
-const FLASHMAN_IMDB_ID = "tt0090407";
+      res.on("end", () => {
 
-const CACHE = new Map();
-const CACHE_TTL = 1000 * 60 * 60 * 6;
+        /*
+         * Seguir redirecciones HTTP.
+         *
+         * Cinemeta actualmente puede responder 307.
+         */
 
-function cacheGet(key) {
-  const item = CACHE.get(key);
+        if (
+          res.statusCode >= 300 &&
+          res.statusCode < 400 &&
+          res.headers.location
+        ) {
+          if (redirects >= 5) {
+            reject(
+              new Error(
+                `Demasiadas redirecciones en ${url}`
+              )
+            );
+            return;
+          }
 
-  if (!item) return null;
-
-  if (Date.now() - item.time > CACHE_TTL) {
-    CACHE.delete(key);
-    return null;
-  }
-
-  return item.value;
-}
-
-function cacheSet(key, value) {
-  CACHE.set(key, {
-    time: Date.now(),
-    value
-  });
-
-  return value;
-}
-
-async function tmdb(path, params = {}) {
-  if (!TMDB_API_KEY) {
-    throw new Error(
-      "TMDB_API_KEY no está configurada en .env"
-    );
-  }
-
-  const url = new URL(TMDB_BASE + path);
-
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== null && value !== "") {
-      url.searchParams.set(key, value);
-    }
-  }
-
-  const response = await fetch(url, {
-    headers: {
-      accept: "application/json",
-      Authorization: `Bearer ${TMDB_API_KEY}`
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error(
-      `TMDB ${response.status}: ${await response.text()}`
-    );
-  }
-
-  return response.json();
-}
-
-async function cachedTMDB(path, params = {}) {
-  const key =
-    path +
-    "?" +
-    new URLSearchParams(params).toString();
-
-  const cached = cacheGet(key);
-
-  if (cached) {
-    return cached;
-  }
-
-  const data = await tmdb(path, params);
-
-  return cacheSet(key, data);
-}
-
-function image(path) {
-  if (!path) return undefined;
-
-  if (path.startsWith("http")) {
-    return path;
-  }
-
-  return TMDB_IMAGE + path;
-}
-
-function firstText(...values) {
-  for (const value of values) {
-    if (typeof value === "string" && value.trim()) {
-      return value.trim();
-    }
-  }
-
-  return undefined;
-}
-
-function cleanArray(value) {
-  return Array.isArray(value)
-    ? value.filter(Boolean)
-    : [];
-}
-
-async function getEpisode(
-  seasonNumber,
-  episodeNumber
-) {
-  const base = await cachedTMDB(
-    `/tv/${FLASHMAN_TMDB_ID}/season/${seasonNumber}/episode/${episodeNumber}`,
-    {
-      language: "es-MX",
-      append_to_response:
-        "credits,images,videos,external_ids"
-    }
-  );
-
-  let spanish = base;
-
-  if (!base.overview || !base.name) {
-    try {
-      spanish = await cachedTMDB(
-        `/tv/${FLASHMAN_TMDB_ID}/season/${seasonNumber}/episode/${episodeNumber}`,
-        {
-          language: "es-ES",
-          append_to_response:
-            "credits,images,videos,external_ids"
-        }
-      );
-    } catch {}
-  }
-
-  let english = base;
-
-  if (!spanish.overview || !spanish.name) {
-    try {
-      english = await cachedTMDB(
-        `/tv/${FLASHMAN_TMDB_ID}/season/${seasonNumber}/episode/${episodeNumber}`,
-        {
-          language: "en-US",
-          append_to_response:
-            "credits,videos,external_ids"
-        }
-      );
-    } catch {}
-  }
-
-  const data = {
-    ...english,
-    ...base,
-    name: firstText(
-      spanish.name,
-      base.name,
-      english.name
-    ),
-    overview: firstText(
-      spanish.overview,
-      base.overview,
-      english.overview
-    )
-  };
-
-  return data;
-}
-
-async function getKeywords() {
-  try {
-    return await cachedTMDB(
-      `/tv/${FLASHMAN_TMDB_ID}/keywords`
-    );
-  } catch {
-    return {
-      results: []
-    };
-  }
-}
-
-async function getSimilarSeries() {
-  try {
-    return await cachedTMDB(
-      `/tv/${FLASHMAN_TMDB_ID}/similar`,
-      {
-        language: "es-MX",
-        page: 1
-      }
-    );
-  } catch {
-    return {
-      results: []
-    };
-  }
-}
-
-async function getRecommendations() {
-  try {
-    return await cachedTMDB(
-      `/tv/${FLASHMAN_TMDB_ID}/recommendations`,
-      {
-        language: "es-MX",
-        page: 1
-      }
-    );
-  } catch {
-    return {
-      results: []
-    };
-  }
-}
-
-function buildKeywords(data) {
-  return cleanArray(
-    data?.results
-  ).map(keyword => ({
-    id: keyword.id,
-    name: keyword.name
-  }));
-}
-
-function buildRelatedSeries(results) {
-  return cleanArray(results)
-    .filter(item =>
-      item &&
-      item.id &&
-      item.name
-    )
-    .slice(0, 30)
-    .map(item => ({
-      id: String(item.id),
-      type: "series",
-      name: item.name,
-      originalName:
-        item.original_name ||
-        item.name,
-      poster:
-        image(item.poster_path),
-      background:
-        image(item.backdrop_path),
-      description:
-        item.overview || "",
-      overview:
-        item.overview || "",
-      year:
-        item.first_air_date
-          ? Number(
-              item.first_air_date.slice(0, 4)
-            )
-          : undefined,
-      released:
-        item.first_air_date,
-      releaseInfo:
-        item.first_air_date,
-      rating:
-        item.vote_average,
-      tmdbRating:
-        item.vote_average,
-      tmdbVotes:
-        item.vote_count,
-      tmdb_id:
-        String(item.id),
-      genres:
-        cleanArray(
-          item.genre_ids
-        )
-    }));
-}
-
-async function getSeries() {
-  return cachedTMDB(
-    `/tv/${FLASHMAN_TMDB_ID}`,
-    {
-      language: "es-MX",
-      append_to_response:
-        "credits,aggregate_credits,external_ids,images,videos,content_ratings,translations,keywords"
-    }
-  );
-}
-
-function buildCast(series) {
-  const cast =
-    series?.aggregate_credits?.cast ||
-    series?.credits?.cast ||
-    [];
-
-  return cast
-    .slice(0, 40)
-    .map(person => ({
-      name: person.name,
-      character:
-        person.roles?.[0]?.character ||
-        person.character ||
-        "",
-      photo: image(person.profile_path),
-      imdb_id:
-        person.external_ids?.imdb_id
-    }));
-}
-
-function buildCrew(series) {
-  const crew =
-    series?.aggregate_credits?.crew ||
-    series?.credits?.crew ||
-    [];
-
-  return crew
-    .slice(0, 60)
-    .map(person => ({
-      name: person.name,
-      job:
-        person.jobs?.[0]?.job ||
-        person.job ||
-        "",
-      department: person.department,
-      photo: image(person.profile_path)
-    }));
-}
-
-function buildVideos(series) {
-  const videos =
-    series?.videos?.results ||
-    [];
-
-  return videos
-    .filter(video =>
-      video.site === "YouTube"
-    )
-    .slice(0, 20)
-    .map(video => ({
-      id: video.key,
-      title: video.name,
-      name: video.name,
-      site: video.site,
-      type: video.type,
-      official: video.official,
-      url:
-        `https://www.youtube.com/watch?v=${video.key}`
-    }));
-}
-
-function buildGenres(series) {
-  return cleanArray(
-    series?.genres
-  ).map(g => g.name);
-}
-
-function buildNetworks(series) {
-  return cleanArray(
-    series?.networks
-  ).map(n => ({
-    id: n.id,
-    name: n.name,
-    logo: image(n.logo_path),
-    origin_country: n.origin_country
-  }));
-}
-
-function buildCompanies(series) {
-  return cleanArray(
-    series?.production_companies
-  ).map(c => ({
-    id: c.id,
-    name: c.name,
-    logo: image(c.logo_path),
-    origin_country: c.origin_country
-  }));
-}
-
-function buildCountries(series) {
-  return cleanArray(
-    series?.origin_country
-  );
-}
-
-function buildLanguages(series) {
-  return cleanArray(
-    series?.languages
-  );
-}
-
-async function buildSeriesMeta(
-  series,
-  keywordsData,
-  similarData,
-  recommendationsData
-) {
-  const external =
-    series?.external_ids || {};
-
-  return {
-    id: FLASHMAN_IMDB_ID,
-
-    type: "series",
-
-    name:
-      series.name ||
-      "Choushinsei Flashman",
-
-    originalName:
-      series.original_name ||
-      "超新星フラッシュマン",
-
-    poster:
-      image(series.poster_path),
-
-    background:
-      image(series.backdrop_path),
-
-    logo:
-      undefined,
-
-    description:
-      firstText(
-        series.overview
-      ),
-
-    overview:
-      firstText(
-        series.overview
-      ),
-
-    year:
-      series.first_air_date
-        ? Number(
-            series.first_air_date.slice(0, 4)
+          getJSON(
+            new URL(
+              res.headers.location,
+              url
+            ).toString(),
+            headers,
+            redirects + 1
           )
-        : 1986,
+            .then(resolve)
+            .catch(reject);
 
-    releaseInfo:
-      [
-        series.first_air_date,
-        series.last_air_date
-      ]
-        .filter(Boolean)
-        .join(" - "),
-
-    released:
-      series.first_air_date,
-
-    endDate:
-      series.last_air_date,
-
-    status:
-      series.status,
-
-    runtime:
-      series.episode_run_time?.[0],
-
-    genres:
-      buildGenres(series),
-
-    country:
-      buildCountries(series),
-
-    languages:
-      buildLanguages(series),
-
-    networks:
-      buildNetworks(series),
-
-    productionCompanies:
-      buildCompanies(series),
-
-    /*
-     * TMDB KEYWORDS
-     *
-     * Estas etiquetas ayudan a que los sistemas de
-     * recomendaciones puedan entender mejor el tipo
-     * de serie.
-     */
-    keywords:
-      buildKeywords(
-        keywordsData || {
-          results:
-            series?.keywords?.results || []
+          return;
         }
-      ),
 
-    keywordNames:
-      buildKeywords(
-        keywordsData || {
-          results:
-            series?.keywords?.results || []
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          reject(
+            new Error(
+              `HTTP ${res.statusCode} en ${url}`
+            )
+          );
+          return;
         }
-      ).map(
-        keyword => keyword.name
-      ),
 
-    /*
-     * TMDB SIMILAR
-     */
-    similar:
-      buildRelatedSeries(
-        similarData?.results || []
-      ),
+        try {
+          resolve(JSON.parse(data));
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
 
-    similarSeries:
-      buildRelatedSeries(
-        similarData?.results || []
-      ),
+    req.on("error", reject);
 
-    /*
-     * TMDB RECOMMENDATIONS
-     */
-    recommendations:
-      buildRelatedSeries(
-        recommendationsData?.results || []
-      ),
-
-    recommendedSeries:
-      buildRelatedSeries(
-        recommendationsData?.results || []
-      ),
-
-    seasonCount:
-      series.number_of_seasons,
-
-    episodeCount:
-      series.number_of_episodes,
-
-    imdbRating:
-      undefined,
-
-    tmdbRating:
-      series.vote_average,
-
-    tmdbVotes:
-      series.vote_count,
-
-    rating:
-      series.vote_average,
-
-    votes:
-      series.vote_count,
-
-    imdb_id:
-      external.imdb_id ||
-      FLASHMAN_IMDB_ID,
-
-    tmdb_id:
-      String(FLASHMAN_TMDB_ID),
-
-    tvdb_id:
-      external.tvdb_id,
-
-    wikidata_id:
-      "Q1328971",
-
-    cast:
-      buildCast(series),
-
-    crew:
-      buildCrew(series),
-
-    videos:
-      buildVideos(series),
-
-    trailer:
-      series?.videos?.results
-        ?.find(
-          video =>
-            video.site === "YouTube" &&
-            video.type === "Trailer"
-        )?.key,
-
-    links: [
-      ...buildRelatedSeries(
-        recommendationsData?.results || []
-      ).slice(0, 10).map(item => ({
-        name: item.name,
-        category: "similar",
-        url:
-          `https://www.themoviedb.org/tv/${item.tmdb_id}`
-      })),
-
-      ...buildRelatedSeries(
-        similarData?.results || []
-      ).slice(0, 10).map(item => ({
-        name: item.name,
-        category: "similar",
-        url:
-          `https://www.themoviedb.org/tv/${item.tmdb_id}`
-      })),
-
-      {
-        name: "IMDb",
-        url:
-          `https://www.imdb.com/title/${FLASHMAN_IMDB_ID}/`
-      },
-      {
-        name: "TMDB",
-        url:
-          `https://www.themoviedb.org/tv/${FLASHMAN_TMDB_ID}`
-      },
-      {
-        name: "Wikidata",
-        url:
-          "https://www.wikidata.org/wiki/Q1328971"
-      }
-    ]
-  };
+    req.setTimeout(15000, () => {
+      req.destroy(new Error(`Timeout en ${url}`));
+    });
+  });
 }
 
-export async function getExternalMetadata(
-  type,
-  id
-) {
-  const isEpisode =
-    type === "series" &&
-    /^tt\d+:\d+:\d+$/.test(id);
+function first(...values) {
+  return values.find(
+    (value) =>
+      value !== undefined &&
+      value !== null &&
+      value !== "" &&
+      !(Array.isArray(value) && value.length === 0)
+  );
+}
 
-  if (isEpisode) {
-    const [
-      ,
-      ,
-      season,
-      episode
-    ] =
-      id.match(
-        /^(tt\d+):(\d+):(\d+)$/
-      ) || [];
+function uniquePeople(list = []) {
+  const seen = new Set();
 
-    if (!season || !episode) {
-      return null;
-    }
+  return list.filter((person) => {
+    const name =
+      typeof person === "string"
+        ? person
+        : person?.name;
 
-    const episodeData =
-      await getEpisode(
-        Number(season),
-        Number(episode)
-      );
+    if (!name) return false;
 
-    const series =
-      await getSeries();
+    const key = name.toLowerCase();
 
-    return {
-      id,
-      type: "series",
+    if (seen.has(key)) return false;
 
-      name:
-        episodeData.name ||
-        `Episodio ${episode}`,
+    seen.add(key);
+    return true;
+  });
+}
 
-      title:
-        episodeData.name ||
-        `Episodio ${episode}`,
+export async function mergeExternalMetadata(meta, imdbId) {
+  let tmdb = null;
+  let cinemetaData = null;
 
-      episodeNumber:
-        episodeData.episode_number,
+  /*
+   * ============================================================
+   * CINEMETA
+   * ============================================================
+   */
 
-      seasonNumber:
-        episodeData.season_number,
+  try {
+    cinemetaData = await getJSON(
+      `https://v3-cinemeta.strem.io/meta/tv/${encodeURIComponent(imdbId)}.json`
+    );
 
-      season:
-        episodeData.season_number,
-
-      number:
-        episodeData.episode_number,
-
-      overview:
-        episodeData.overview || "",
-
-      description:
-        episodeData.overview || "",
-
-      released:
-        episodeData.air_date,
-
-      releaseInfo:
-        episodeData.air_date,
-
-      year:
-        episodeData.air_date
-          ? Number(
-              episodeData.air_date.slice(0, 4)
-            )
-          : undefined,
-
-      runtime:
-        episodeData.runtime,
-
-      poster:
-        image(
-          episodeData.still_path
-        ) ||
-        image(series.poster_path),
-
-      background:
-        image(
-          episodeData.still_path
-        ) ||
-        image(series.backdrop_path),
-
-      still:
-        image(
-          episodeData.still_path
-        ),
-
-      rating:
-        episodeData.vote_average,
-
-      tmdbRating:
-        episodeData.vote_average,
-
-      tmdbVotes:
-        episodeData.vote_count,
-
-      votes:
-        episodeData.vote_count,
-
-      imdb_id:
-        FLASHMAN_IMDB_ID,
-
-      tmdb_id:
-        String(FLASHMAN_TMDB_ID),
-
-      seriesId:
-        FLASHMAN_IMDB_ID,
-
-      seriesName:
-        series.name,
-
-      genres:
-        buildGenres(series),
-
-      cast:
-        cleanArray(
-          episodeData.credits?.cast
-        ).slice(0, 30).map(person => ({
-          name: person.name,
-          character: person.character,
-          photo: image(person.profile_path)
-        })),
-
-      crew:
-        cleanArray(
-          episodeData.credits?.crew
-        ).slice(0, 40).map(person => ({
-          name: person.name,
-          job: person.job,
-          department: person.department,
-          photo: image(person.profile_path)
-        })),
-
-      videos:
-        cleanArray(
-          episodeData.videos?.results
-        ).filter(
-          video =>
-            video.site === "YouTube"
-        ).map(video => ({
-          id: video.key,
-          name: video.name,
-          type: video.type,
-          site: video.site,
-          url:
-            `https://www.youtube.com/watch?v=${video.key}`
-        })),
-
-      links: [
-        {
-          name: "IMDb",
-          url:
-            `https://www.imdb.com/title/${FLASHMAN_IMDB_ID}/`
-        },
-        {
-          name: "TMDB",
-          url:
-            `https://www.themoviedb.org/tv/${FLASHMAN_TMDB_ID}/season/${season}/episode/${episode}`
-        }
-      ]
-    };
-  }
-
-  if (
-    type === "series" &&
-    (
-      id === FLASHMAN_IMDB_ID ||
-      id === String(FLASHMAN_TMDB_ID) ||
-      id === "70787"
-    )
-  ) {
-    const series =
-      await getSeries();
-
-    const [
-      keywordsData,
-      similarData,
-      recommendationsData
-    ] = await Promise.all([
-      getKeywords(),
-      getSimilarSeries(),
-      getRecommendations()
-    ]);
-
-    return buildSeriesMeta(
-      series,
-      keywordsData,
-      similarData,
-      recommendationsData
+    console.log(
+      "[externalMetadata] Cinemeta integrado:",
+      cinemetaData?.meta?.name || "sin nombre"
+    );
+  } catch (error) {
+    console.log(
+      "[externalMetadata] Cinemeta no disponible:",
+      error.message
     );
   }
 
-  return null;
-}
+  /*
+   * ============================================================
+   * TMDB
+   * ============================================================
+   */
 
-export {
-  FLASHMAN_TMDB_ID,
-  FLASHMAN_IMDB_ID
-};
+  const tmdbToken = process.env.TMDB_API_KEY;
+
+  if (tmdbToken && meta?.tmdb_id) {
+    try {
+      /*
+       * Usamos el cliente TMDB oficial del addon.
+       *
+       * Esto mantiene una sola implementación de:
+       * - Bearer token
+       * - credits
+       * - external_ids
+       * - videos
+       * - images
+       */
+
+      tmdb = await getTmdbSeries(
+        meta.tmdb_id
+      );
+
+      console.log(
+        "[externalMetadata] TMDB integrado:",
+        tmdb?.name || "sin nombre"
+      );
+    } catch (error) {
+      console.log(
+        "[externalMetadata] TMDB error:",
+        error.message
+      );
+    }
+  } else {
+    console.log(
+      "[externalMetadata] TMDB token o ID no disponible"
+    );
+  }
+
+  /*
+   * ============================================================
+   * DATOS CINEMETA
+   * ============================================================
+   */
+
+  const cm = cinemetaData?.meta || {};
+
+  /*
+   * ============================================================
+   * TMDB CAST
+   * ============================================================
+   */
+
+  const tmdbCast = (tmdb?.credits?.cast || []).slice(0, 30).map(
+    (person) => ({
+      name: person.name,
+      character: person.character || undefined,
+      photo: person.profile_path
+        ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
+        : undefined,
+    })
+  );
+
+  /*
+   * ============================================================
+   * CINEMETA CAST
+   * ============================================================
+   */
+
+  const cinemetaCast = Array.isArray(cm.cast)
+    ? cm.cast.map((person) => {
+        if (typeof person === "string") {
+          return {
+            name: person,
+          };
+        }
+
+        return {
+          name: person.name,
+          character:
+            person.character ||
+            person.characterName ||
+            undefined,
+          photo:
+            person.photo ||
+            person.profile ||
+            undefined,
+        };
+      })
+    : [];
+
+  const cast = uniquePeople([
+    ...tmdbCast,
+    ...cinemetaCast,
+    ...(Array.isArray(meta?.cast) ? meta.cast : []),
+  ]).slice(0, 30);
+
+  /*
+   * ============================================================
+   * DIRECTORES
+   * ============================================================
+   */
+
+  const tmdbDirectors = (tmdb?.credits?.crew || [])
+    .filter((person) => person.job === "Director")
+    .map((person) => ({
+      name: person.name,
+      photo: person.profile_path
+        ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
+        : undefined,
+    }));
+
+  const cinemetaDirectors = Array.isArray(cm.director)
+    ? cm.director.map((person) =>
+        typeof person === "string"
+          ? { name: person }
+          : person
+      )
+    : [];
+
+  const directors = uniquePeople([
+    ...tmdbDirectors,
+    ...cinemetaDirectors,
+    ...(Array.isArray(meta?.director) ? meta.director : []),
+  ]);
+
+  /*
+   * ============================================================
+   * ESCRITORES
+   * ============================================================
+   */
+
+  const tmdbWriters = (tmdb?.credits?.crew || [])
+    .filter(
+      (person) =>
+        person.job === "Writer" ||
+        person.job === "Screenplay" ||
+        person.job === "Story"
+    )
+    .map((person) => ({
+      name: person.name,
+      photo: person.profile_path
+        ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
+        : undefined,
+    }));
+
+  const cinemetaWriters = Array.isArray(cm.writer)
+    ? cm.writer.map((person) =>
+        typeof person === "string"
+          ? { name: person }
+          : person
+      )
+    : [];
+
+  const writers = uniquePeople([
+    ...tmdbWriters,
+    ...cinemetaWriters,
+    ...(Array.isArray(meta?.writer) ? meta.writer : []),
+  ]);
+
+  /*
+   * ============================================================
+   * PRODUCTORAS
+   * ============================================================
+   */
+
+  const tmdbProductionCompanies =
+    tmdb?.production_companies?.map(
+      (company) => company.name
+    ) || [];
+
+  const cinemetaProductionCompanies =
+    Array.isArray(cm.productionCompanies)
+      ? cm.productionCompanies.map((company) =>
+          typeof company === "string"
+            ? company
+            : company?.name
+        )
+      : [];
+
+  const productionCompanies = [
+    ...new Set(
+      [
+        ...tmdbProductionCompanies,
+        ...cinemetaProductionCompanies,
+        ...(Array.isArray(meta?.productionCompanies)
+          ? meta.productionCompanies
+          : []),
+      ].filter(Boolean)
+    ),
+  ];
+
+  /*
+   * ============================================================
+   * GÉNEROS
+   * ============================================================
+   */
+
+  const tmdbGenres =
+    tmdb?.genres?.map((genre) => genre.name) || [];
+
+  const cinemetaGenres = Array.isArray(cm.genres)
+    ? cm.genres.map((genre) =>
+        typeof genre === "string"
+          ? genre
+          : genre?.name || genre?.title
+      )
+    : [];
+
+  const genres = [
+    ...new Set(
+      [
+        ...tmdbGenres,
+        ...cinemetaGenres,
+        ...(Array.isArray(meta?.genres) ? meta.genres : []),
+      ].filter(Boolean)
+    ),
+  ];
+
+  /*
+   * ============================================================
+   * RATING
+   * ============================================================
+   */
+
+  const imdbRating = first(
+    cm.imdbRating,
+    meta?.imdbRating
+  );
+
+  const imdbVotes = first(
+    cm.imdbVotes,
+    meta?.imdbVotes
+  );
+
+  const tmdbRating =
+    typeof tmdb?.vote_average === "number"
+      ? tmdb.vote_average
+      : undefined;
+
+  /*
+   * ============================================================
+   * POSTER
+   *
+   * IMPORTANTE:
+   * Conservamos el poster que ya usa el addon.
+   * No cambiamos la reproducción ni la identificación.
+   * ============================================================
+   */
+
+  const poster = first(
+    meta?.poster,
+    cm.poster,
+    tmdb?.poster_path
+      ? `https://image.tmdb.org/t/p/original${tmdb.poster_path}`
+      : undefined
+  );
+
+  /*
+   * ============================================================
+   * CUSTOM ADDON MEDIA
+   * ============================================================
+   *
+   * Preserve the manually defined background and YouTube trailers
+   * from metadata.js after external enrichment.
+   */
+  const customBackground = meta?.background;
+  const customTrailerYtIds = Array.isArray(meta?.trailerYtIds)
+    ? meta.trailerYtIds.filter(Boolean)
+    : [];
+
+  /*
+   * ============================================================
+   * BACKGROUND
+   * ============================================================
+   */
+
+  const background = first(
+    meta?.background,
+    cm.background,
+    tmdb?.backdrop_path
+      ? `https://image.tmdb.org/t/p/original${tmdb.backdrop_path}`
+      : undefined
+  );
+
+  /*
+   * ============================================================
+   * LOGO
+   * ============================================================
+   */
+
+  const logo = first(
+    meta?.logo,
+    cm.logo,
+    tmdb?.images?.logos?.find(
+      (x) => x.iso_639_1 === "es"
+    )?.file_path
+      ? `https://image.tmdb.org/t/p/original${
+          tmdb.images.logos.find(
+            (x) => x.iso_639_1 === "es"
+          ).file_path
+        }`
+      : undefined,
+    tmdb?.images?.logos?.find(
+      (x) => x.iso_639_1 === "en"
+    )?.file_path
+      ? `https://image.tmdb.org/t/p/original${
+          tmdb.images.logos.find(
+            (x) => x.iso_639_1 === "en"
+          ).file_path
+        }`
+      : undefined
+  );
+
+  /*
+   * ============================================================
+   * RED / CANAL
+   * ============================================================
+   */
+
+  const network = first(
+    meta?.network,
+    cm.network,
+    tmdb?.networks?.[0]?.name
+  );
+
+  /*
+   * ============================================================
+   * METADATA FINAL
+   * ============================================================
+   */
+
+  const merged = {
+    ...meta,
+
+    imdb_id: first(
+      meta?.imdb_id,
+      cm.imdb_id,
+      imdbId
+    ),
+
+    tmdb_id: first(
+      meta?.tmdb_id,
+      cm.tmdb_id,
+      tmdb?.id
+    ),
+
+    tvdb_id: first(
+      meta?.tvdb_id,
+      cm.tvdb_id,
+      tmdb?.external_ids?.tvdb_id
+    ),
+
+    name: first(
+      meta?.name,
+      cm.name,
+      tmdb?.name
+    ),
+
+    originalName: first(
+      meta?.originalName,
+      cm.originalName,
+      tmdb?.original_name
+    ),
+
+    description: first(
+      meta?.description,
+      cm.description,
+      tmdb?.overview
+    ),
+
+    overview: first(
+      meta?.overview,
+      cm.overview,
+      tmdb?.overview
+    ),
+
+    poster,
+
+    background: customBackground || background,
+    trailerYtIds: customTrailerYtIds,
+
+    logo,
+
+    year: first(
+      meta?.year,
+      cm.year,
+      tmdb?.first_air_date
+        ? Number(tmdb.first_air_date.slice(0, 4))
+        : undefined
+    ),
+
+    releaseInfo: first(
+      meta?.releaseInfo,
+      cm.releaseInfo,
+      tmdb?.first_air_date
+    ),
+
+    status: first(
+      meta?.status,
+      cm.status,
+      tmdb?.status
+    ),
+
+    runtime: first(
+      meta?.runtime,
+      cm.runtime,
+      tmdb?.episode_run_time?.[0]
+    ),
+
+    country: first(
+      meta?.country,
+      cm.country,
+      tmdb?.origin_country
+    ),
+
+    language: first(
+      meta?.language,
+      cm.language,
+      tmdb?.original_language
+    ),
+
+    genres,
+
+    genre: genres,
+
+    rating: first(
+      meta?.rating,
+      tmdbRating,
+      cm.rating
+    ),
+
+    tmdbRating,
+
+    vote_average:
+      typeof tmdb?.vote_average === "number"
+        ? tmdb.vote_average
+        : undefined,
+
+    imdbRating,
+
+    imdbVotes,
+
+    network,
+
+    productionCompanies,
+
+    production_companies: productionCompanies,
+
+    cast,
+
+    actors: cast,
+
+    director: directors,
+
+    directors,
+
+    writer: writers,
+
+    writers,
+
+    tagline: first(
+      meta?.tagline,
+      cm.tagline,
+      tmdb?.tagline
+    ),
+
+    /*
+     * Conservamos cualquier enlace que Cinemeta ya
+     * entregue, incluyendo referencias externas.
+     */
+    links: [
+      ...(Array.isArray(meta?.links) ? meta.links : []),
+      ...(Array.isArray(cm.links) ? cm.links : []),
+    ].filter(
+      (link, index, array) =>
+        index ===
+        array.findIndex(
+          (x) =>
+            x?.url === link?.url &&
+            x?.name === link?.name
+        )
+    ),
+  };
+
+  console.log(
+    "[externalMetadata] Géneros:",
+    genres.length
+  );
+
+  console.log(
+    "[externalMetadata] Reparto:",
+    cast.length
+  );
+
+  console.log(
+    "[externalMetadata] Productoras:",
+    productionCompanies.length
+  );
+
+  console.log(
+    "[externalMetadata] Director:",
+    directors.length
+  );
+
+  console.log(
+    "[externalMetadata] Escritores:",
+    writers.length
+  );
+
+  console.log(
+    "[externalMetadata] IMDb:",
+    imdbRating || "N/D"
+  );
+
+  console.log(
+    "[externalMetadata] Network:",
+    network || "N/D"
+  );
+
+  return merged;
+}
