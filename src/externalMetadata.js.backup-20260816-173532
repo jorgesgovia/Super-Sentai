@@ -171,114 +171,13 @@ async function getEpisode(
   return data;
 }
 
-async function getKeywords() {
-  try {
-    return await cachedTMDB(
-      `/tv/${FLASHMAN_TMDB_ID}/keywords`
-    );
-  } catch {
-    return {
-      results: []
-    };
-  }
-}
-
-async function getSimilarSeries() {
-  try {
-    return await cachedTMDB(
-      `/tv/${FLASHMAN_TMDB_ID}/similar`,
-      {
-        language: "es-MX",
-        page: 1
-      }
-    );
-  } catch {
-    return {
-      results: []
-    };
-  }
-}
-
-async function getRecommendations() {
-  try {
-    return await cachedTMDB(
-      `/tv/${FLASHMAN_TMDB_ID}/recommendations`,
-      {
-        language: "es-MX",
-        page: 1
-      }
-    );
-  } catch {
-    return {
-      results: []
-    };
-  }
-}
-
-function buildKeywords(data) {
-  return cleanArray(
-    data?.results
-  ).map(keyword => ({
-    id: keyword.id,
-    name: keyword.name
-  }));
-}
-
-function buildRelatedSeries(results) {
-  return cleanArray(results)
-    .filter(item =>
-      item &&
-      item.id &&
-      item.name
-    )
-    .slice(0, 30)
-    .map(item => ({
-      id: String(item.id),
-      type: "series",
-      name: item.name,
-      originalName:
-        item.original_name ||
-        item.name,
-      poster:
-        image(item.poster_path),
-      background:
-        image(item.backdrop_path),
-      description:
-        item.overview || "",
-      overview:
-        item.overview || "",
-      year:
-        item.first_air_date
-          ? Number(
-              item.first_air_date.slice(0, 4)
-            )
-          : undefined,
-      released:
-        item.first_air_date,
-      releaseInfo:
-        item.first_air_date,
-      rating:
-        item.vote_average,
-      tmdbRating:
-        item.vote_average,
-      tmdbVotes:
-        item.vote_count,
-      tmdb_id:
-        String(item.id),
-      genres:
-        cleanArray(
-          item.genre_ids
-        )
-    }));
-}
-
 async function getSeries() {
   return cachedTMDB(
     `/tv/${FLASHMAN_TMDB_ID}`,
     {
       language: "es-MX",
       append_to_response:
-        "credits,aggregate_credits,external_ids,images,videos,content_ratings,translations,keywords"
+        "credits,aggregate_credits,external_ids,images,videos,content_ratings,translations"
     }
   );
 }
@@ -384,12 +283,7 @@ function buildLanguages(series) {
   );
 }
 
-async function buildSeriesMeta(
-  series,
-  keywordsData,
-  similarData,
-  recommendationsData
-) {
+function buildSeriesMeta(series) {
   const external =
     series?.external_ids || {};
 
@@ -467,57 +361,6 @@ async function buildSeriesMeta(
     productionCompanies:
       buildCompanies(series),
 
-    /*
-     * TMDB KEYWORDS
-     *
-     * Estas etiquetas ayudan a que los sistemas de
-     * recomendaciones puedan entender mejor el tipo
-     * de serie.
-     */
-    keywords:
-      buildKeywords(
-        keywordsData || {
-          results:
-            series?.keywords?.results || []
-        }
-      ),
-
-    keywordNames:
-      buildKeywords(
-        keywordsData || {
-          results:
-            series?.keywords?.results || []
-        }
-      ).map(
-        keyword => keyword.name
-      ),
-
-    /*
-     * TMDB SIMILAR
-     */
-    similar:
-      buildRelatedSeries(
-        similarData?.results || []
-      ),
-
-    similarSeries:
-      buildRelatedSeries(
-        similarData?.results || []
-      ),
-
-    /*
-     * TMDB RECOMMENDATIONS
-     */
-    recommendations:
-      buildRelatedSeries(
-        recommendationsData?.results || []
-      ),
-
-    recommendedSeries:
-      buildRelatedSeries(
-        recommendationsData?.results || []
-      ),
-
     seasonCount:
       series.number_of_seasons,
 
@@ -570,24 +413,6 @@ async function buildSeriesMeta(
         )?.key,
 
     links: [
-      ...buildRelatedSeries(
-        recommendationsData?.results || []
-      ).slice(0, 10).map(item => ({
-        name: item.name,
-        category: "similar",
-        url:
-          `https://www.themoviedb.org/tv/${item.tmdb_id}`
-      })),
-
-      ...buildRelatedSeries(
-        similarData?.results || []
-      ).slice(0, 10).map(item => ({
-        name: item.name,
-        category: "similar",
-        url:
-          `https://www.themoviedb.org/tv/${item.tmdb_id}`
-      })),
-
       {
         name: "IMDb",
         url:
@@ -789,21 +614,8 @@ export async function getExternalMetadata(
     const series =
       await getSeries();
 
-    const [
-      keywordsData,
-      similarData,
-      recommendationsData
-    ] = await Promise.all([
-      getKeywords(),
-      getSimilarSeries(),
-      getRecommendations()
-    ]);
-
     return buildSeriesMeta(
-      series,
-      keywordsData,
-      similarData,
-      recommendationsData
+      series
     );
   }
 
