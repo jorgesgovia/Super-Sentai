@@ -200,7 +200,7 @@ app.get("/meta/:type/:id.json", async (req, res) => {
     if (
       id !== "70787" &&
       id !== "super-sentai-flashman" &&
-      id !== "hikari-sentai-maskman"
+      id !== "53129"
     ) {
       return res.status(404).json({
         meta: null
@@ -264,8 +264,8 @@ app.get("/meta/:type/:id.json", async (req, res) => {
 
     try {
       tmdbEpisodes = await getEpisodes(
-        id === "hikari-sentai-maskman"
-          ? "hikari-sentai-maskman"
+        id === "53129"
+          ? "53129"
           : "super-sentai-flashman"
       );
 
@@ -290,8 +290,8 @@ app.get("/meta/:type/:id.json", async (req, res) => {
         return {
           id:
             `${
-              id === "hikari-sentai-maskman"
-                ? "hikari-sentai-maskman"
+              id === "53129"
+                ? "53129"
                 : "70787"
             }:1:${episodeNumber}`,
 
@@ -383,8 +383,8 @@ app.get("/meta/:type/:id.json", async (req, res) => {
        * El ID que Nuvio pidió debe coincidir con el ID público.
        */
       id:
-        id === "hikari-sentai-maskman"
-          ? "hikari-sentai-maskman"
+        id === "53129"
+          ? "53129"
           : "70787",
 
       /*
@@ -518,7 +518,7 @@ app.get("/stream/:type/:id.json", async (req, res) => {
 
     if (
       !id.startsWith("70787:") &&
-      !id.startsWith("hikari-sentai-maskman:")
+      !id.startsWith("53129:")
     ) {
 
       console.log(

@@ -58,7 +58,7 @@ export async function getStreams(episodeId) {
   // HIKARI SENTAI MASKMAN
   // ==========================================================
 
-  if (seriesId === "hikari-sentai-maskman") {
+  if (seriesId === "53129") {
 
     const episodes =
       await extractMaskmanEpisodes();

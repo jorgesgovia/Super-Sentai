@@ -130,7 +130,7 @@ export async function buildMetadata() {
 
 export async function getMaskmanMetadata() {
   return {
-    id: "hikari-sentai-maskman",
+    id: "53129",
     imdb_id: "tt0092371",
     tmdb_id: "53129",
     tmdbId: "53129",
