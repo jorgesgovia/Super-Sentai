@@ -9,15 +9,15 @@ app.get("/manifest.json", (req, res) => {
   res.json({
     id: "org.super-sentai.nuvio",
     version: "1.0.0",
-    name: "Super Sentai",
-    description: "Series de Super Sentai para Nuvio",
+    name: "Chōshinsei Flashman",
+    description: "Chōshinsei Flashman para Nuvio",
     resources: ["catalog", "meta", "stream"],
     types: ["series"],
     catalogs: [
       {
         type: "series",
         id: "super-sentai",
-        name: "Super Sentai"
+        name: "Chōshinsei Flashman"
       }
     ],
     idPrefixes: ["super-sentai-"]
