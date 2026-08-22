@@ -266,22 +266,115 @@ app.get("/meta/:type/:id.json", async (req, res) => {
     let tmdbEpisodes = [];
 
     try {
-      tmdbEpisodes = await getEpisodes(
-        id === "53129"
-          ? "53129"
-          : "super-sentai-flashman"
-      );
+
+      if (id === "53129") {
+
+        console.log(
+          "🎭 OBTENIENDO EPISODIOS DE HIKARI SENTAI MASKMAN"
+        );
+
+        tmdbEpisodes = await getEpisodes("53129");
+
+        /*
+         * Si TMDB no devuelve episodios para Maskman,
+         * generamos los 51 episodios internamente.
+         *
+         * Los IDs serán:
+         *
+         * 53129:1:1
+         * 53129:1:2
+         * ...
+         * 53129:1:51
+         */
+
+        if (!Array.isArray(tmdbEpisodes) || tmdbEpisodes.length === 0) {
+
+          console.log(
+            "⚠️ TMDB NO DEVOLVIÓ EPISODIOS DE MASKMAN"
+          );
+
+          console.log(
+            "🔧 GENERANDO 51 EPISODIOS"
+          );
+
+          tmdbEpisodes = Array.from(
+            { length: 51 },
+            (_, index) => {
+
+              const episodeNumber = index + 1;
+
+              return {
+                episode: episodeNumber,
+                title:
+                  `Hikari Sentai Maskman E${episodeNumber}`,
+                name:
+                  `Hikari Sentai Maskman E${episodeNumber}`,
+                released: null
+              };
+
+            }
+          );
+
+        }
+
+      } else {
+
+        console.log(
+          "⚡ OBTENIENDO EPISODIOS DE CHOUSINSEI FLASHMAN"
+        );
+
+        tmdbEpisodes = await getEpisodes(
+          "super-sentai-flashman"
+        );
+
+      }
 
       console.log(
-        "EPISODIOS TMDB OBTENIDOS:",
+        "EPISODIOS OBTENIDOS:",
         tmdbEpisodes.length
       );
+
     } catch (error) {
+
       console.error(
-        "ERROR OBTENIENDO EPISODIOS TMDB:",
+        "ERROR OBTENIENDO EPISODIOS:",
         error.message
       );
+
+      /*
+       * FALLBACK SOLO PARA MASKMAN.
+       *
+       * Flashman NO entra aquí.
+       */
+
+      if (id === "53129") {
+
+        console.log(
+          "🔧 FALLBACK MASKMAN: GENERANDO 51 EPISODIOS"
+        );
+
+        tmdbEpisodes = Array.from(
+          { length: 51 },
+          (_, index) => {
+
+            const episodeNumber = index + 1;
+
+            return {
+              episode: episodeNumber,
+              title:
+                `Hikari Sentai Maskman E${episodeNumber}`,
+              name:
+                `Hikari Sentai Maskman E${episodeNumber}`,
+              released: null
+            };
+
+          }
+        );
+
+      }
+
     }
+
 
     const videos = tmdbEpisodes.map(
       (episode, index) => {
