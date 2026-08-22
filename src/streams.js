@@ -1,91 +1,144 @@
 import {
   extractDriveEpisodes,
-  getDriveStream,
   extractMaskmanEpisodes,
+  getDriveStream,
   getMaskmanStream
 } from "./drive.js";
 
+
 export async function getStreams(episodeId) {
 
-  const match = episodeId.match(/:(\d+):(\d+)$/);
+  try {
 
-  if (!match) {
-    return [];
-  }
+    const parts =
+      String(episodeId).split(":");
 
-  const seriesId = episodeId.split(":")[0];
-
-  const season = Number(match[1]);
-  const episode = Number(match[2]);
-
-  if (season !== 1) {
-    return [];
-  }
-
-  // ==========================================================
-  // FLASHMAN
-  // ==========================================================
-
-  if (seriesId === "70787") {
-
-    const episodes =
-      await extractDriveEpisodes();
-
-    const video =
-      episodes.find(
-        (x) => x.episode === episode
-      );
-
-    if (!video) {
+    if (parts.length < 2) {
       return [];
     }
 
-    const streamUrl =
-      await getDriveStream(video.fileId);
+    const seriesId =
+      parts[0];
 
-    return [
-      {
-        name: "Google Drive",
-        title:
-          `Episodio ${episode} • Google Drive`,
-        url: streamUrl,
-        type: "video/mp4"
-      }
-    ];
-  }
+    let season = 1;
+    let episode;
 
-  // ==========================================================
-  // HIKARI SENTAI MASKMAN
-  // ==========================================================
+    if (parts.length === 2) {
 
-  if (seriesId === "53129") {
+      episode =
+        Number(parts[1]);
 
-    const episodes =
-      await extractMaskmanEpisodes();
+    } else {
 
-    const video =
-      episodes.find(
-        (x) => x.episode === episode
-      );
+      season =
+        Number(parts[1]);
 
-    if (!video) {
+      episode =
+        Number(parts[2]);
+    }
+
+    if (
+      season !== 1 ||
+      !Number.isInteger(episode) ||
+      episode < 1
+    ) {
       return [];
     }
 
-    const streamUrl =
-      await getMaskmanStream(video.fileId);
 
-    return [
-      {
-        name: "Google Drive",
-        title:
-          `Episodio ${episode} • Google Drive`,
-        url: streamUrl,
-        type: "video/mp4"
+    // ==========================================
+    // FLASHMAN
+    // ==========================================
+
+    if (seriesId === "70787") {
+
+      if (episode > 50) {
+        return [];
       }
-    ];
-  }
 
-  return [];
+      const episodes =
+        await extractDriveEpisodes("70787");
+
+      const video =
+        episodes.find(
+          x => Number(x.episode) === episode
+        );
+
+      if (!video) {
+        console.log(
+          `No se encontró Flashman E${episode}`
+        );
+        return [];
+      }
+
+      const streamUrl =
+        await getDriveStream(
+          video.fileId
+        );
+
+      return [
+        {
+          name: "Google Drive",
+          title:
+            `Choushinsei Flashman E${episode} • Google Drive`,
+          url: streamUrl,
+          type: "video/mp4"
+        }
+      ];
+    }
+
+
+    // ==========================================
+    // HIKARI SENTAI MASKMAN
+    // ==========================================
+
+    if (seriesId === "53129") {
+
+      if (episode > 51) {
+        return [];
+      }
+
+      const episodes =
+        await extractMaskmanEpisodes();
+
+      const video =
+        episodes.find(
+          x => Number(x.episode) === episode
+        );
+
+      if (!video) {
+        console.log(
+          `No se encontró Maskman E${episode}`
+        );
+        return [];
+      }
+
+      const streamUrl =
+        await getMaskmanStream(
+          video.fileId
+        );
+
+      return [
+        {
+          name: "Google Drive",
+          title:
+            `Hikari Sentai Maskman E${episode} • Google Drive`,
+          url: streamUrl,
+          type: "video/mp4"
+        }
+      ];
+    }
+
+
+    return [];
+
+  } catch (error) {
+
+    console.error(
+      `Error obteniendo stream para ${episodeId}:`,
+      error.message
+    );
+
+    return [];
+  }
 }
-

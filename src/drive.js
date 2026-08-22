@@ -1,7 +1,9 @@
-const FOLDER_ID = "1PXkjbU32tpllgv6K-z-tbZuUyjDZ6zS6";
+const FLASHMAN_FOLDER_ID =
+  "1PXkjbU32tpllgv6K-z-tbZuUyjDZ6zS6";
 
-const FOLDER_URL =
-  `https://drive.google.com/drive/folders/${FOLDER_ID}?hl=es`;
+const MASKMAN_FOLDER_ID =
+  "1bWvwhziUoL9QZHuFJDA9ys9ij9iChVXG";
+
 
 function decodeHtmlEntities(text) {
   return text
@@ -12,101 +14,21 @@ function decodeHtmlEntities(text) {
     .replace(/&gt;/g, ">");
 }
 
-export async function extractDriveEpisodes() {
-  const response = await fetch(FOLDER_URL);
 
-  if (!response.ok) {
-    throw new Error(`Google Drive respondió ${response.status}`);
-  }
+async function extractFromFolder(folderId, maxEpisode) {
 
-  const raw = await response.text();
-  const data = decodeHtmlEntities(raw);
+  const folderUrl =
+    `https://drive.google.com/drive/folders/${folderId}?hl=es`;
 
-  const results = new Map();
-
-  const regex =
-    /data-id="([^"]+)"[\s\S]{0,3000}?aria-label="([^"]+\.mp4)[^"]*"/gi;
-
-  let match;
-
-  while ((match = regex.exec(data)) !== null) {
-    const fileId = match[1];
-    const filename = match[2];
-
-    const episodeMatch = filename.match(/\bE(\d{1,2})\b/i);
-
-    if (!episodeMatch) continue;
-
-    const episode = Number(episodeMatch[1]);
-
-    if (episode < 1 || episode > 50) continue;
-
-    if (!results.has(episode)) {
-      results.set(episode, {
-        episode,
-        filename,
-        fileId
-      });
-    }
-  }
-
-  return [...results.values()]
-    .sort((a, b) => a.episode - b.episode);
-}
-
-export async function getDriveStream(fileId) {
-  const url =
-    `https://drive.usercontent.google.com/download` +
-    `?id=${encodeURIComponent(fileId)}` +
-    `&export=download`;
-
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error(`Google Drive respondió ${response.status}`);
-  }
-
-  const html = await response.text();
-
-  const uuidMatch =
-    html.match(/name="uuid"\s+value="([^"]+)"/i);
-
-  if (!uuidMatch) {
-    throw new Error("Google Drive no proporcionó UUID");
-  }
-
-  const uuid = uuidMatch[1];
-
-  return (
-    `https://drive.usercontent.google.com/download` +
-    `?id=${encodeURIComponent(fileId)}` +
-    `&export=download` +
-    `&confirm=t` +
-    `&uuid=${encodeURIComponent(uuid)}`
-  );
-}
-
-// ============================================================
-// HIKARI SENTAI MASKMAN
-// ============================================================
-
-const MASKMAN_FOLDER_ID = "1bWvwhziUoL9QZHuFJDA9ys9ij9iChVXG";
-
-const MASKMAN_FOLDER_URL =
-  `https://drive.google.com/drive/folders/${MASKMAN_FOLDER_ID}?hl=es`;
-
-export async function extractMaskmanEpisodes() {
-
-  const response = await fetch(MASKMAN_FOLDER_URL);
+  const response = await fetch(folderUrl);
 
   if (!response.ok) {
     throw new Error(
-      `Google Drive respondió ${response.status} para Maskman`
+      `Google Drive respondió ${response.status}`
     );
   }
 
   const raw = await response.text();
-
   const data = decodeHtmlEntities(raw);
 
   const results = new Map();
@@ -119,7 +41,6 @@ export async function extractMaskmanEpisodes() {
   while ((match = regex.exec(data)) !== null) {
 
     const fileId = match[1];
-
     const filename = match[2];
 
     const episodeMatch =
@@ -130,25 +51,54 @@ export async function extractMaskmanEpisodes() {
     const episode =
       Number(episodeMatch[1]);
 
-    if (episode < 1 || episode > 50) continue;
+    if (
+      episode < 1 ||
+      episode > maxEpisode
+    ) {
+      continue;
+    }
 
     if (!results.has(episode)) {
-
       results.set(episode, {
         episode,
         filename,
         fileId
       });
-
     }
   }
 
   return [...results.values()]
-    .sort((a, b) => a.episode - b.episode);
+    .sort((a, b) =>
+      a.episode - b.episode
+    );
 }
 
 
-export async function getMaskmanStream(fileId) {
+export async function extractDriveEpisodes(seriesId = "70787") {
+
+  if (String(seriesId) === "53129") {
+    return extractFromFolder(
+      MASKMAN_FOLDER_ID,
+      51
+    );
+  }
+
+  return extractFromFolder(
+    FLASHMAN_FOLDER_ID,
+    50
+  );
+}
+
+
+export async function extractMaskmanEpisodes() {
+  return extractFromFolder(
+    MASKMAN_FOLDER_ID,
+    51
+  );
+}
+
+
+export async function getDriveStream(fileId) {
 
   const url =
     `https://drive.usercontent.google.com/download` +
@@ -160,7 +110,7 @@ export async function getMaskmanStream(fileId) {
 
   if (!response.ok) {
     throw new Error(
-      `Google Drive respondió ${response.status} para Maskman`
+      `Google Drive respondió ${response.status}`
     );
   }
 
@@ -174,7 +124,7 @@ export async function getMaskmanStream(fileId) {
 
   if (!uuidMatch) {
     throw new Error(
-      "Google Drive no proporcionó UUID para Maskman"
+      "Google Drive no proporcionó UUID"
     );
   }
 
@@ -188,4 +138,9 @@ export async function getMaskmanStream(fileId) {
     `&confirm=t` +
     `&uuid=${encodeURIComponent(uuid)}`
   );
+}
+
+
+export async function getMaskmanStream(fileId) {
+  return getDriveStream(fileId);
 }
