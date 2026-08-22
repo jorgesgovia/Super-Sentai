@@ -63,13 +63,13 @@ app.get("/manifest.json", (req, res) => {
       {
         name: "meta",
         types: ["series"],
-        idPrefixes: ["70787"]
+        idPrefixes: ["70787", "53129"]
       },
 
       {
         name: "stream",
         types: ["series"],
-        idPrefixes: ["70787"]
+        idPrefixes: ["70787", "53129"]
       }
     ],
 
@@ -211,7 +211,10 @@ app.get("/meta/:type/:id.json", async (req, res) => {
      * Obtenemos nuestra metadata completa.
      */
 
-    const metadata = await getMetadata();
+    const metadata =
+      id === "53129"
+        ? await getMaskmanMetadata()
+        : await getMetadata();
 
 
     /*
