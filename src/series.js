@@ -6,5 +6,15 @@ export const SERIES = [
     background: "",
     trailer: "",
     drive: ""
+  },
+
+  {
+    id: "hikari-sentai-maskman",
+    tmdbId: "53129",
+    imdbId: "tt0092371",
+    name: "Hikari Sentai Maskman",
+    background: "",
+    trailer: "",
+    drive: ""
   }
 ];

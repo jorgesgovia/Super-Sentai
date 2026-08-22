@@ -85,3 +85,107 @@ export async function getDriveStream(fileId) {
     `&uuid=${encodeURIComponent(uuid)}`
   );
 }
+
+// ============================================================
+// HIKARI SENTAI MASKMAN
+// ============================================================
+
+const MASKMAN_FOLDER_ID = "1bWvwhziUoL9QZHuFJDA9ys9ij9iChVXG";
+
+const MASKMAN_FOLDER_URL =
+  `https://drive.google.com/drive/folders/${MASKMAN_FOLDER_ID}?hl=es`;
+
+export async function extractMaskmanEpisodes() {
+
+  const response = await fetch(MASKMAN_FOLDER_URL);
+
+  if (!response.ok) {
+    throw new Error(
+      `Google Drive respondió ${response.status} para Maskman`
+    );
+  }
+
+  const raw = await response.text();
+
+  const data = decodeHtmlEntities(raw);
+
+  const results = new Map();
+
+  const regex =
+    /data-id="([^"]+)"[\s\S]{0,3000}?aria-label="([^"]+\.mp4)[^"]*"/gi;
+
+  let match;
+
+  while ((match = regex.exec(data)) !== null) {
+
+    const fileId = match[1];
+
+    const filename = match[2];
+
+    const episodeMatch =
+      filename.match(/\bE(\d{1,2})\b/i);
+
+    if (!episodeMatch) continue;
+
+    const episode =
+      Number(episodeMatch[1]);
+
+    if (episode < 1 || episode > 50) continue;
+
+    if (!results.has(episode)) {
+
+      results.set(episode, {
+        episode,
+        filename,
+        fileId
+      });
+
+    }
+  }
+
+  return [...results.values()]
+    .sort((a, b) => a.episode - b.episode);
+}
+
+
+export async function getMaskmanStream(fileId) {
+
+  const url =
+    `https://drive.usercontent.google.com/download` +
+    `?id=${encodeURIComponent(fileId)}` +
+    `&export=download`;
+
+  const response =
+    await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(
+      `Google Drive respondió ${response.status} para Maskman`
+    );
+  }
+
+  const html =
+    await response.text();
+
+  const uuidMatch =
+    html.match(
+      /name="uuid"\s+value="([^"]+)"/i
+    );
+
+  if (!uuidMatch) {
+    throw new Error(
+      "Google Drive no proporcionó UUID para Maskman"
+    );
+  }
+
+  const uuid =
+    uuidMatch[1];
+
+  return (
+    `https://drive.usercontent.google.com/download` +
+    `?id=${encodeURIComponent(fileId)}` +
+    `&export=download` +
+    `&confirm=t` +
+    `&uuid=${encodeURIComponent(uuid)}`
+  );
+}
