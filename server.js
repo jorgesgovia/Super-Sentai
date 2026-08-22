@@ -49,7 +49,7 @@ app.get("/manifest.json", (req, res) => {
     id: "org.super-sentai.nuvio",
     version: "1.0.0",
 
-    name: "Super Sentai",
+    name: "Chōshinsei Flashman",
 
     description:
       "Series y episodios de Super Sentai para Nuvio",
@@ -81,7 +81,7 @@ app.get("/manifest.json", (req, res) => {
       {
         type: "series",
         id: "super-sentai",
-        name: "Super Sentai"
+        name: "Chōshinsei Flashman"
       }
     ]
   });
