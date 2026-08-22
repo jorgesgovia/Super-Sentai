@@ -2,7 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 
-import { getMetadata } from "./src/metadata.js";
+import { getMetadata, getMaskmanMetadata } from "./src/metadata.js";
 import { getStreams } from "./src/streams.js";
 import { getEpisodes } from "./src/episodes.js";
 import { mergeExternalMetadata } from "./src/externalMetadata.js";
@@ -113,38 +113,46 @@ app.get("/catalog/:type/:id.json", async (req, res) => {
       });
     }
 
-    const metadata = await getMetadata();
+    const flashman = await getMetadata();
+    const maskman = await getMaskmanMetadata();
 
-    const catalogMeta = {
-      id: metadata.id,
-      type: "series",
-      name: metadata.name,
-
-      poster: metadata.poster,
-      background: metadata.background,
-
-      description: metadata.description,
-
-      genres: metadata.genres,
-
-      year: metadata.year,
-
-      releaseInfo: metadata.releaseInfo
-    };
+    const metas = [
+      {
+        id: flashman.id,
+        type: "series",
+        name: flashman.name,
+        poster: flashman.poster,
+        background: flashman.background,
+        description: flashman.description,
+        genres: flashman.genres,
+        year: flashman.year,
+        releaseInfo: flashman.releaseInfo
+      },
+      {
+        id: maskman.id,
+        type: "series",
+        name: maskman.name,
+        poster: maskman.poster,
+        background: maskman.background,
+        description: maskman.description,
+        genres: maskman.genres,
+        year: maskman.year,
+        releaseInfo: maskman.releaseInfo
+      }
+    ];
 
     console.log(
       "CATALOG ENVIADO:",
-      JSON.stringify({
-        id: catalogMeta.id,
-        type: catalogMeta.type,
-        name: catalogMeta.name
-      })
+      JSON.stringify(
+        metas.map((item) => ({
+          id: item.id,
+          name: item.name
+        }))
+      )
     );
 
     return res.json({
-      metas: [
-        catalogMeta
-      ]
+      metas
     });
 
   } catch (error) {
@@ -158,7 +166,6 @@ app.get("/catalog/:type/:id.json", async (req, res) => {
     });
   }
 });
-
 
 /*
  * ============================================================
@@ -192,7 +199,8 @@ app.get("/meta/:type/:id.json", async (req, res) => {
 
     if (
       id !== "70787" &&
-      id !== "super-sentai-flashman"
+      id !== "super-sentai-flashman" &&
+      id !== "hikari-sentai-maskman"
     ) {
       return res.status(404).json({
         meta: null
@@ -256,7 +264,9 @@ app.get("/meta/:type/:id.json", async (req, res) => {
 
     try {
       tmdbEpisodes = await getEpisodes(
-        "super-sentai-flashman"
+        id === "hikari-sentai-maskman"
+          ? "hikari-sentai-maskman"
+          : "super-sentai-flashman"
       );
 
       console.log(
@@ -279,7 +289,11 @@ app.get("/meta/:type/:id.json", async (req, res) => {
 
         return {
           id:
-            `70787:1:${episodeNumber}`,
+            `${
+              id === "hikari-sentai-maskman"
+                ? "hikari-sentai-maskman"
+                : "70787"
+            }:1:${episodeNumber}`,
 
           title:
             episode.title ||
@@ -368,7 +382,10 @@ app.get("/meta/:type/:id.json", async (req, res) => {
       /*
        * El ID que Nuvio pidió debe coincidir con el ID público.
        */
-      id: "70787",
+      id:
+        id === "hikari-sentai-maskman"
+          ? "hikari-sentai-maskman"
+          : "70787",
 
       /*
        * Nuestros episodios conservan IDs internos para Drive.
@@ -500,9 +517,8 @@ app.get("/stream/:type/:id.json", async (req, res) => {
      */
 
     if (
-      !id.startsWith(
-        "70787:"
-      )
+      !id.startsWith("70787:") &&
+      !id.startsWith("hikari-sentai-maskman:")
     ) {
 
       console.log(

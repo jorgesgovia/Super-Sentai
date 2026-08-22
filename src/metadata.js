@@ -127,3 +127,48 @@ tmdbScore: 8.0,
 export async function buildMetadata() {
   return getMetadata();
 }
+
+export async function getMaskmanMetadata() {
+  return {
+    id: "hikari-sentai-maskman",
+    imdb_id: "tt0092371",
+    tmdb_id: "53129",
+    tmdbId: "53129",
+    type: "series",
+    name: "Hikari Sentai Maskman",
+    poster:
+      "https://image.tmdb.org/t/p/original/8JwL6X3R8f6wK5Z9wJ5QfJY5V9M.jpg",
+    background:
+      "https://image.tmdb.org/t/p/original/8JwL6X3R8f6wK5Z9wJ5QfJY5V9M.jpg",
+    description:
+      "Hikari Sentai Maskman es una serie japonesa de Super Sentai estrenada en 1987. Cinco guerreros entrenados en las artes marciales luchan contra el Imperio Tube para proteger la Tierra.",
+    overview:
+      "Hikari Sentai Maskman es una serie japonesa de Super Sentai estrenada en 1987. Cinco guerreros entrenados en las artes marciales luchan contra el Imperio Tube para proteger la Tierra.",
+    year: 1987,
+    releaseInfo: "1987-1988",
+    releaseYear: "1987-1988",
+    released: "1987-02-28",
+    genres: [
+      "Action",
+      "Adventure",
+      "Science Fiction"
+    ],
+    runtime: 30,
+    duration: 30,
+    status: "Ended",
+    rating: 7.8,
+    imdbRating: 7.8,
+    tmdbRating: 7.5,
+    language: "ja",
+    originalLanguage: "Japanese",
+    spokenLanguages: [
+      "Japanese"
+    ],
+    spokenLanguage: "ja",
+    languages: [
+      "ja"
+    ],
+    country: "JP",
+    trailerYtIds: []
+  };
+}

@@ -21,6 +21,7 @@ export const manifest = {
     }
   ],
   idPrefixes: [
-    "70787"
+    "70787",
+    "hikari-sentai-maskman"
   ]
 };
