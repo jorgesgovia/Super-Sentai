@@ -91,9 +91,21 @@ export async function extractDriveEpisodes(seriesId = "70787") {
 
 
 export async function extractMaskmanEpisodes() {
-  return extractFromFolder(
+  const episodes = await extractFromFolder(
     MASKMAN_FOLDER_ID,
     51
+  );
+
+  if (!episodes.some(ep => ep.episode === 51)) {
+    episodes.push({
+      episode: 51,
+      filename: "Hikari Sentai Maskman E51",
+      fileId: "1rm0SlUO6tzuGxdE8UaFWL5rncMxdhj1Z"
+    });
+  }
+
+  return episodes.sort(
+    (a, b) => a.episode - b.episode
   );
 }
 
